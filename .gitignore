@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+data/users.json
+uploads/
+*.png
+.env
