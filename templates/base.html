@@ -63,13 +63,13 @@
 
 {% if session.get('username') %}
 <!-- Lotus Chat Widget -->
-<button class="chat-fab" onclick="toggleChat()" id="chatFab" title="שוחחי עם לוטוס">
+<button class="chat-fab" onclick="toggleChat()" id="chatFab" title="שוחחי עם הריונית">
     🌸
 </button>
 <div class="chat-panel" id="chatPanel">
     <div class="chat-header">
         <div class="chat-header-info">
-            <span class="chat-agent-name">לוטוס 🌸</span>
+            <span class="chat-agent-name">הריונית 🌸</span>
             <span class="chat-agent-sub">הסוכנת האישית שלי</span>
         </div>
         <button class="chat-close" onclick="toggleChat()">✕</button>
@@ -77,7 +77,7 @@
     <div class="chat-messages" id="chatMessages">
         <div class="message agent">
             שלום {{ user.display_name }}! 🌸<br>
-            אני לוטוס, הסוכנת האישית שלך. אני כאן לכל שאלה על ההריון, על ההתפתחות, על הגוף שלך — או סתם לשוחח. מה על ליבך?
+            אני הריונית, הסוכנת האישית שלך. אני כאן לכל שאלה על ההריון, על ההתפתחות, על הגוף שלך — או סתם לשוחח. מה על ליבך?
         </div>
     </div>
     <div class="chat-input-area">

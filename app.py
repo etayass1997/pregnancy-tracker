@@ -274,7 +274,7 @@ def chat():
     trimester = 1 if current_week <= 13 else (2 if current_week <= 27 else 3)
     week_data = PREGNANCY_WEEKS.get(current_week, PREGNANCY_WEEKS[40])
 
-    system = f"""אתה "לוטוס" 🌸 — הסוכנת האישית של {user['display_name']} באפליקציית מעקב הריון.
+    system = f"""אתה "הריונית" 🌸 — הסוכנת האישית של {user['display_name']} באפליקציית מעקב הריון.
 
 ## מצב נוכחי
 - שם: {user['display_name']}

@@ -42,7 +42,7 @@ async function sendMessage() {
     appendMessage('user', text);
     chatHistory.push({ role: 'user', content: text });
 
-    const loading = appendMessage('loading', 'לוטוס מקלידה...');
+    const loading = appendMessage('loading', 'הריונית מקלידה...');
 
     try {
         const res = await fetch('/api/chat', {
