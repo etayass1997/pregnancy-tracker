@@ -424,6 +424,119 @@ main.with-sidebar { margin-right: 230px; }
 .send-btn:hover { background: #C4628A; }
 .send-btn:disabled { background: var(--pink-light); cursor: not-allowed; }
 
+/* ─── Shared ─── */
+.section-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 14px; }
+.empty-state { text-align: center; padding: 80px 20px; color: var(--text-muted); }
+.empty-icon { font-size: 60px; margin-bottom: 16px; }
+.empty-state h3 { font-size: 20px; margin-bottom: 8px; color: var(--text); }
+
+.form-group textarea {
+    width: 100%; padding: 11px 14px;
+    border: 2px solid var(--border); border-radius: var(--radius-sm);
+    font-family: 'Heebo', sans-serif; font-size: 15px;
+    color: var(--text); outline: none; direction: rtl;
+    background: var(--white); resize: vertical; min-height: 120px;
+    transition: border-color 0.2s;
+}
+.form-group textarea:focus { border-color: var(--pink); }
+
+/* ─── Journal ─── */
+.journal-list { display: flex; flex-direction: column; gap: 16px; }
+.journal-card {
+    background: var(--white); border-radius: var(--radius);
+    padding: 22px 26px; border: 1px solid var(--border);
+    box-shadow: var(--shadow); transition: box-shadow 0.2s;
+}
+.journal-card:hover { box-shadow: var(--shadow-hover); }
+.journal-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.journal-week-badge {
+    background: var(--pink-pale); color: var(--pink);
+    border-radius: 20px; padding: 3px 12px; font-size: 13px; font-weight: 700;
+}
+.journal-date { font-size: 12px; color: var(--text-muted); }
+.journal-text { font-size: 15px; line-height: 1.7; color: var(--text); white-space: pre-wrap; }
+.journal-actions { display: flex; gap: 10px; margin-top: 14px; }
+.journal-action-btn {
+    background: none; border: 1px solid var(--border);
+    border-radius: 8px; padding: 5px 12px; font-size: 13px;
+    cursor: pointer; color: var(--text-muted); font-family: 'Heebo', sans-serif;
+    transition: all 0.2s;
+}
+.journal-action-btn:hover { background: var(--pink-pale); border-color: var(--pink-light); color: var(--pink); }
+.journal-action-btn.danger:hover { background: #FFF0F5; border-color: var(--pink-light); color: #C4628A; }
+
+/* ─── Appointments ─── */
+.appt-list { display: flex; flex-direction: column; gap: 12px; }
+.appt-card {
+    background: var(--white); border-radius: var(--radius);
+    padding: 18px 22px; border: 1px solid var(--border);
+    box-shadow: var(--shadow); display: flex; align-items: center; gap: 16px;
+}
+.appt-card.upcoming { border-right: 4px solid var(--pink); }
+.appt-card.past { opacity: 0.6; }
+.appt-icon { font-size: 28px; flex-shrink: 0; }
+.appt-body { flex: 1; }
+.appt-type { font-size: 16px; font-weight: 700; color: var(--text); }
+.appt-date { font-size: 13px; color: var(--pink); font-weight: 600; margin-top: 3px; }
+.appt-notes { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.appt-delete {
+    background: none; border: none; cursor: pointer;
+    font-size: 16px; color: var(--text-muted); padding: 4px 8px;
+    border-radius: 8px; transition: all 0.2s;
+}
+.appt-delete:hover { background: #FFF0F5; color: #C4628A; }
+
+/* ─── Baby Names ─── */
+.name-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+.name-tab {
+    padding: 7px 16px; border-radius: 20px;
+    border: 1.5px solid var(--border); background: var(--white);
+    font-family: 'Heebo', sans-serif; font-size: 14px; cursor: pointer;
+    color: var(--text-muted); transition: all 0.2s;
+}
+.name-tab.active, .name-tab:hover { background: var(--pink-pale); border-color: var(--pink-light); color: var(--pink); }
+
+.names-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+.name-card {
+    background: var(--white); border-radius: var(--radius);
+    padding: 18px 16px; border: 2px solid var(--border);
+    box-shadow: var(--shadow); display: flex; flex-direction: column;
+    align-items: center; gap: 10px; position: relative;
+    transition: all 0.2s;
+}
+.name-card:hover { border-color: var(--pink-light); box-shadow: var(--shadow-hover); }
+.name-card.liked-card { border-color: var(--pink); background: var(--pink-pale); }
+.name-gender-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    position: absolute; top: 10px; right: 12px;
+}
+.name-gender-dot.boy { background: #7BAFD4; }
+.name-gender-dot.girl { background: var(--pink); }
+.name-gender-dot.unknown { background: var(--lavender); }
+
+.name-text { font-size: 20px; font-weight: 800; color: var(--text); text-align: center; }
+.name-actions { display: flex; gap: 8px; }
+.like-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 20px; transition: transform 0.2s; padding: 2px;
+}
+.like-btn:hover { transform: scale(1.25); }
+.name-del-btn {
+    background: none; border: none; cursor: pointer; font-size: 14px;
+    color: var(--text-muted); padding: 2px 6px; border-radius: 6px; transition: all 0.2s;
+}
+.name-del-btn:hover { background: #FFF0F5; color: #C4628A; }
+
+.gender-picker { display: flex; gap: 10px; }
+.gender-option {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 10px;
+    border: 1.5px solid var(--border); cursor: pointer;
+    font-size: 14px; transition: all 0.2s;
+}
+.gender-option:hover { border-color: var(--pink-light); background: var(--pink-pale); }
+.gender-option input { display: none; }
+
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }

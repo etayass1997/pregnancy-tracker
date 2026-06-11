@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}שמות — בטן גדולה{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+        <h1 class="page-title">👶 שמות לתינוק</h1>
+        <p class="page-subtitle">אספי שמות שאוהבת, סמני מועדפים — {{ names | selectattr('liked') | list | length }} מועדפים מתוך {{ names | length }}</p>
+    </div>
+    <button class="btn btn-primary" onclick="openNameModal()">+ הוסיפי שם</button>
+</div>
+
+<!-- Filter tabs -->
+<div class="name-tabs">
+    <button class="name-tab active" onclick="filterNames('all', this)">הכל ({{ names | length }})</button>
+    <button class="name-tab" onclick="filterNames('liked', this)">❤️ מועדפים</button>
+    <button class="name-tab" onclick="filterNames('boy', this)">👦 בנים</button>
+    <button class="name-tab" onclick="filterNames('girl', this)">👧 בנות</button>
+    <button class="name-tab" onclick="filterNames('unknown', this)">✨ פתוח</button>
+</div>
+
+{% if names %}
+<div class="names-grid" id="namesGrid">
+    {% for n in names %}
+    <div class="name-card {{ n.gender }}" id="name-{{ n.id }}" data-gender="{{ n.gender }}" data-liked="{{ 'true' if n.liked else 'false' }}">
+        <div class="name-gender-dot {{ n.gender }}"></div>
+        <div class="name-text">{{ n.name }}</div>
+        <div class="name-actions">
+            <button class="like-btn {% if n.liked %}liked{% endif %}" onclick="toggleLike('{{ n.id }}', this)" title="מועדף">
+                {{ '❤️' if n.liked else '🤍' }}
+            </button>
+            <button class="name-del-btn" onclick="deleteName('{{ n.id }}')" title="הסרה">✕</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">👶</div>
+    <h3>אין שמות עדיין</h3>
+    <p>התחילי לאסוף שמות שאוהבת — בנים, בנות, או סתם שמות יפים!</p>
+    <button class="btn btn-primary" onclick="openNameModal()" style="margin-top:20px">הוסיפי שם ראשון 💕</button>
+</div>
+{% endif %}
+
+<!-- Modal -->
+<div class="modal" id="nameModal">
+    <div class="modal-card">
+        <h2 class="modal-title">👶 הוספת שם</h2>
+        <div class="form-group">
+            <label>שם</label>
+            <input type="text" id="nameInput" placeholder="הכניסי שם...">
+        </div>
+        <div class="form-group">
+            <label>מין</label>
+            <div class="gender-picker">
+                <label class="gender-option boy-opt">
+                    <input type="radio" name="gender" value="boy"> 👦 בן
+                </label>
+                <label class="gender-option girl-opt">
+                    <input type="radio" name="gender" value="girl"> 👧 בת
+                </label>
+                <label class="gender-option unknown-opt">
+                    <input type="radio" name="gender" value="unknown" checked> ✨ פתוח
+                </label>
+            </div>
+        </div>
+        <div style="display:flex;gap:12px">
+            <button class="btn btn-primary" onclick="submitName()">הוספה</button>
+            <button class="btn btn-outline" onclick="closeNameModal()">ביטול</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}יומן — בטן גדולה{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+        <h1 class="page-title">📓 היומן שלי</h1>
+        <p class="page-subtitle">תעדי את הרגשות, המחשבות והרגעים המיוחדים</p>
+    </div>
+    <button class="btn btn-primary" onclick="openJournalModal()">+ רשומה חדשה</button>
+</div>
+
+{% if entries %}
+<div class="journal-list">
+    {% for entry in entries %}
+    <div class="journal-card" id="jentry-{{ entry.id }}">
+        <div class="journal-card-header">
+            <span class="journal-week-badge">שבוע {{ entry.week }}</span>
+            <span class="journal-date">{{ entry.created_at }}</span>
+        </div>
+        <div class="journal-text">{{ entry.text }}</div>
+        <div class="journal-actions">
+            <button class="journal-action-btn" onclick="editEntry('{{ entry.id }}', {{ entry.week }}, `{{ entry.text | replace('`','\\`') | replace('\n','\\n') }}`)">✏️ עריכה</button>
+            <button class="journal-action-btn danger" onclick="deleteEntry('{{ entry.id }}')">🗑️ מחיקה</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📓</div>
+    <h3>אין עדיין רשומות</h3>
+    <p>התחילי לתעד את המסע המדהים שלך — כל רגע שווה לזכור!</p>
+    <button class="btn btn-primary" onclick="openJournalModal()" style="margin-top:20px">כתבי את הרשומה הראשונה ✨</button>
+</div>
+{% endif %}
+
+<!-- Modal -->
+<div class="modal" id="journalModal">
+    <div class="modal-card">
+        <h2 class="modal-title">📓 רשומה חדשה</h2>
+        <input type="hidden" id="editEntryId" value="">
+        <div class="form-group">
+            <label>שבוע</label>
+            <select id="journalWeek">
+                {% for w in range(1, 41) %}
+                <option value="{{ w }}" {% if w == current_week %}selected{% endif %}>שבוע {{ w }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>מה על ליבך?</label>
+            <textarea id="journalText" rows="6" placeholder="כתבי מה שמרגישה, מה שחשבת, מה קרה היום..."></textarea>
+        </div>
+        <div style="display:flex;gap:12px">
+            <button class="btn btn-primary" onclick="submitJournal()">שמירה</button>
+            <button class="btn btn-outline" onclick="closeJournalModal()">ביטול</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

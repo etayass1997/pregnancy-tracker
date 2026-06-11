@@ -322,6 +322,181 @@ def chat():
         return jsonify({'error': str(e)}), 500
 
 
+# ─── Journal ────────────────────────────────────────────────────────────────
+
+@app.route('/journal')
+def journal():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    user, current_week, due_date, _ = get_user_context()
+    if not user:
+        return redirect(url_for('login'))
+    entries = sorted(user.get('journal', []), key=lambda e: e['week'], reverse=True)
+    return render_template('journal.html', user=user, current_week=current_week, entries=entries)
+
+
+@app.route('/api/journal', methods=['POST'])
+def save_journal_entry():
+    if 'username' not in session:
+        return jsonify({'error': 'לא מחוברת'}), 401
+    data = request.json or {}
+    week = data.get('week')
+    text = data.get('text', '').strip()
+    entry_id = data.get('id')
+    if not text or not week:
+        return jsonify({'error': 'חסר מידע'}), 400
+
+    users = load_users()
+    username = session['username']
+    entries = users[username].setdefault('journal', [])
+
+    if entry_id:
+        for e in entries:
+            if e['id'] == entry_id:
+                e['text'] = text
+                e['updated_at'] = datetime.now().strftime('%d.%m.%Y')
+                break
+    else:
+        entries.append({
+            'id': uuid.uuid4().hex[:10],
+            'week': int(week),
+            'text': text,
+            'created_at': datetime.now().strftime('%d.%m.%Y %H:%M'),
+            'updated_at': None
+        })
+    save_users(users)
+    return jsonify({'success': True})
+
+
+@app.route('/api/journal/<entry_id>', methods=['DELETE'])
+def delete_journal_entry(entry_id):
+    if 'username' not in session:
+        return jsonify({'error': 'לא מחוברת'}), 401
+    users = load_users()
+    username = session['username']
+    users[username]['journal'] = [
+        e for e in users[username].get('journal', []) if e['id'] != entry_id
+    ]
+    save_users(users)
+    return jsonify({'success': True})
+
+
+# ─── Appointments ────────────────────────────────────────────────────────────
+
+@app.route('/appointments')
+def appointments():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    user, current_week, due_date, _ = get_user_context()
+    if not user:
+        return redirect(url_for('login'))
+    appts = sorted(user.get('appointments', []), key=lambda a: a['date'])
+    today = date.today().isoformat()
+    upcoming = [a for a in appts if a['date'] >= today]
+    past = [a for a in appts if a['date'] < today]
+    return render_template('appointments.html',
+        user=user, current_week=current_week,
+        upcoming=upcoming, past=past, today=today)
+
+
+@app.route('/api/appointments', methods=['POST'])
+def save_appointment():
+    if 'username' not in session:
+        return jsonify({'error': 'לא מחוברת'}), 401
+    data = request.json or {}
+    appt_date = data.get('date', '').strip()
+    appt_type = data.get('type', '').strip()
+    notes = data.get('notes', '').strip()
+    if not appt_date or not appt_type:
+        return jsonify({'error': 'חסר מידע'}), 400
+
+    users = load_users()
+    username = session['username']
+    appts = users[username].setdefault('appointments', [])
+    appts.append({
+        'id': uuid.uuid4().hex[:10],
+        'date': appt_date,
+        'type': appt_type,
+        'notes': notes,
+        'created_at': datetime.now().strftime('%d.%m.%Y')
+    })
+    save_users(users)
+    return jsonify({'success': True})
+
+
+@app.route('/api/appointments/<appt_id>', methods=['DELETE'])
+def delete_appointment(appt_id):
+    if 'username' not in session:
+        return jsonify({'error': 'לא מחוברת'}), 401
+    users = load_users()
+    username = session['username']
+    users[username]['appointments'] = [
+        a for a in users[username].get('appointments', []) if a['id'] != appt_id
+    ]
+    save_users(users)
+    return jsonify({'success': True})
+
+
+# ─── Baby Names ──────────────────────────────────────────────────────────────
+
+@app.route('/names')
+def names():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    user, current_week, due_date, _ = get_user_context()
+    if not user:
+        return redirect(url_for('login'))
+    return render_template('names.html', user=user, current_week=current_week,
+                           names=user.get('baby_names', []))
+
+
+@app.route('/api/names', methods=['POST'])
+def add_name():
+    if 'username' not in session:
+        return jsonify({'error': 'לא מחוברת'}), 401
+    data = request.json or {}
+    name = data.get('name', '').strip()
+    gender = data.get('gender', 'unknown')
+    if not name:
+        return jsonify({'error': 'חסר שם'}), 400
+
+    users = load_users()
+    username = session['username']
+    baby_names = users[username].setdefault('baby_names', [])
+    if any(n['name'] == name for n in baby_names):
+        return jsonify({'error': 'השם כבר קיים ברשימה'}), 400
+    baby_names.append({'id': uuid.uuid4().hex[:10], 'name': name, 'gender': gender, 'liked': False})
+    save_users(users)
+    return jsonify({'success': True})
+
+
+@app.route('/api/names/<name_id>/like', methods=['POST'])
+def toggle_name_like(name_id):
+    if 'username' not in session:
+        return jsonify({'error': 'לא מחוברת'}), 401
+    users = load_users()
+    username = session['username']
+    for n in users[username].get('baby_names', []):
+        if n['id'] == name_id:
+            n['liked'] = not n['liked']
+            break
+    save_users(users)
+    return jsonify({'success': True})
+
+
+@app.route('/api/names/<name_id>', methods=['DELETE'])
+def delete_name(name_id):
+    if 'username' not in session:
+        return jsonify({'error': 'לא מחוברת'}), 401
+    users = load_users()
+    username = session['username']
+    users[username]['baby_names'] = [
+        n for n in users[username].get('baby_names', []) if n['id'] != name_id
+    ]
+    save_users(users)
+    return jsonify({'success': True})
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5002))
     app.run(host='0.0.0.0', port=port, debug=True)

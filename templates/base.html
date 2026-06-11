@@ -32,6 +32,21 @@
                 <span class="nav-icon">📸</span> גלריה
             </a>
         </li>
+        <li>
+            <a href="{{ url_for('journal') }}" class="nav-link {% if request.endpoint == 'journal' %}active{% endif %}">
+                <span class="nav-icon">📓</span> יומן
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('appointments') }}" class="nav-link {% if request.endpoint == 'appointments' %}active{% endif %}">
+                <span class="nav-icon">🏥</span> תורים
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('names') }}" class="nav-link {% if request.endpoint == 'names' %}active{% endif %}">
+                <span class="nav-icon">👶</span> שמות
+            </a>
+        </li>
     </ul>
 
     <div class="sidebar-footer">
