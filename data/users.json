@@ -1,0 +1,9 @@
+{
+  "test_mia": {
+    "password_hash": "scrypt:32768:8:1$zTfW8zAWfOCptTBo$0ec6a9d16a48a13acc1afa0fd7c6c5af3680d264ca0ad8acdb8b2987a09dac349dd7d3769ff606e27f916c49ccf0f43ad39f500039548caf34f027eec4fe5a25",
+    "display_name": "מיה",
+    "registration_date": "2026-06-11",
+    "registration_week": 24,
+    "photos": []
+  }
+}

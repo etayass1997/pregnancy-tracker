@@ -1,0 +1,327 @@
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+import anthropic
+import json
+import os
+import uuid
+from datetime import datetime, date, timedelta
+from pregnancy_data import PREGNANCY_WEEKS
+
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'pregnancy-lotus-secret-2026')
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_FILE = os.path.join(BASE_DIR, 'data', 'users.json')
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'heif'}
+
+os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+def load_users():
+    if not os.path.exists(DATA_FILE):
+        return {}
+    with open(DATA_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def save_users(users):
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(users, f, ensure_ascii=False, indent=2)
+
+
+def get_current_week(user_data):
+    reg_date = datetime.strptime(user_data['registration_date'], '%Y-%m-%d').date()
+    reg_week = user_data['registration_week']
+    weeks_elapsed = (date.today() - reg_date).days // 7
+    return min(reg_week + weeks_elapsed, 40)
+
+
+def get_due_date(user_data):
+    reg_date = datetime.strptime(user_data['registration_date'], '%Y-%m-%d').date()
+    weeks_remaining = 40 - user_data['registration_week']
+    return reg_date + timedelta(weeks=weeks_remaining)
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def get_user_context():
+    if 'username' not in session:
+        return None, None, None, None
+    users = load_users()
+    user = users.get(session['username'])
+    if not user:
+        return None, None, None, None
+    current_week = get_current_week(user)
+    due_date = get_due_date(user)
+    return user, current_week, due_date, users
+
+
+@app.route('/')
+def index():
+    if 'username' in session:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip().lower()
+        password = request.form.get('password', '')
+        users = load_users()
+        if username in users and check_password_hash(users[username]['password_hash'], password):
+            session['username'] = username
+            return redirect(url_for('dashboard'))
+        return render_template('login.html', error='שם משתמש או סיסמה שגויים')
+    return render_template('login.html')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip().lower()
+        display_name = request.form.get('display_name', '').strip()
+        password = request.form.get('password', '')
+        current_week = int(request.form.get('current_week', 1))
+
+        if not username or not password or not display_name:
+            return render_template('register.html', error='יש למלא את כל השדות')
+        if current_week < 1 or current_week > 40:
+            return render_template('register.html', error='שבוע הריון חייב להיות בין 1 ל-40')
+
+        users = load_users()
+        if username in users:
+            return render_template('register.html', error='שם משתמש כבר קיים, נסי שם אחר')
+
+        users[username] = {
+            'password_hash': generate_password_hash(password),
+            'display_name': display_name,
+            'registration_date': date.today().isoformat(),
+            'registration_week': current_week,
+            'photos': []
+        }
+        save_users(users)
+        session['username'] = username
+        return redirect(url_for('dashboard'))
+    return render_template('register.html')
+
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('login'))
+
+
+@app.route('/dashboard')
+def dashboard():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    user, current_week, due_date, _ = get_user_context()
+    if not user:
+        return redirect(url_for('login'))
+
+    days_left = (due_date - date.today()).days
+    week_data = PREGNANCY_WEEKS.get(current_week, PREGNANCY_WEEKS[40])
+    next_week = min(current_week + 1, 40)
+    next_week_data = PREGNANCY_WEEKS.get(next_week)
+    trimester = 1 if current_week <= 13 else (2 if current_week <= 27 else 3)
+    progress = round((current_week / 40) * 100)
+
+    return render_template('dashboard.html',
+        user=user,
+        current_week=current_week,
+        due_date=due_date,
+        days_left=days_left,
+        week_data=week_data,
+        next_week=next_week,
+        next_week_data=next_week_data,
+        trimester=trimester,
+        progress=progress
+    )
+
+
+@app.route('/journey')
+def journey():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    user, current_week, due_date, _ = get_user_context()
+    if not user:
+        return redirect(url_for('login'))
+
+    return render_template('journey.html',
+        user=user,
+        current_week=current_week,
+        weeks=PREGNANCY_WEEKS
+    )
+
+
+@app.route('/week/<int:week_num>')
+def week_detail(week_num):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    if week_num < 1 or week_num > 40:
+        return redirect(url_for('journey'))
+
+    user, current_week, due_date, _ = get_user_context()
+    if not user:
+        return redirect(url_for('login'))
+
+    week_data = PREGNANCY_WEEKS.get(week_num)
+    return render_template('week_detail.html',
+        user=user,
+        week_num=week_num,
+        week_data=week_data,
+        current_week=current_week
+    )
+
+
+@app.route('/gallery')
+def gallery():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    user, current_week, due_date, _ = get_user_context()
+    if not user:
+        return redirect(url_for('login'))
+
+    photos = sorted(user.get('photos', []), key=lambda p: p.get('week', 0))
+    return render_template('gallery.html',
+        user=user,
+        current_week=current_week,
+        photos=photos
+    )
+
+
+@app.route('/upload', methods=['POST'])
+def upload_photo():
+    if 'username' not in session:
+        return jsonify({'error': 'לא מחוברת'}), 401
+    if 'photo' not in request.files:
+        return jsonify({'error': 'לא נבחרה תמונה'}), 400
+
+    file = request.files['photo']
+    week = request.form.get('week', 1, type=int)
+    caption = request.form.get('caption', '').strip()
+
+    if not file.filename or not allowed_file(file.filename):
+        return jsonify({'error': 'סוג קובץ לא נתמך'}), 400
+
+    username = session['username']
+    user_dir = os.path.join(UPLOAD_FOLDER, username)
+    os.makedirs(user_dir, exist_ok=True)
+
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    filename = f"week{week:02d}_{uuid.uuid4().hex[:8]}.{ext}"
+    file.save(os.path.join(user_dir, filename))
+
+    users = load_users()
+    users[username]['photos'].append({
+        'filename': filename,
+        'week': week,
+        'caption': caption,
+        'uploaded_at': datetime.now().strftime('%d.%m.%Y')
+    })
+    save_users(users)
+    return jsonify({'success': True, 'filename': filename})
+
+
+@app.route('/delete-photo/<filename>', methods=['DELETE'])
+def delete_photo(filename):
+    if 'username' not in session:
+        return jsonify({'error': 'לא מחוברת'}), 401
+
+    username = session['username']
+    safe_filename = secure_filename(filename)
+    filepath = os.path.join(UPLOAD_FOLDER, username, safe_filename)
+    if os.path.exists(filepath):
+        os.remove(filepath)
+
+    users = load_users()
+    users[username]['photos'] = [
+        p for p in users[username].get('photos', []) if p['filename'] != safe_filename
+    ]
+    save_users(users)
+    return jsonify({'success': True})
+
+
+@app.route('/uploads/<username>/<filename>')
+def serve_photo(username, filename):
+    if 'username' not in session or session['username'] != username:
+        return '', 403
+    user_dir = os.path.join(UPLOAD_FOLDER, username)
+    return send_from_directory(user_dir, secure_filename(filename))
+
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    if 'username' not in session:
+        return jsonify({'error': 'לא מחוברת'}), 401
+
+    data = request.json or {}
+    messages = data.get('messages', [])
+    if not messages:
+        return jsonify({'error': 'אין הודעות'}), 400
+
+    user, current_week, due_date, _ = get_user_context()
+    if not user:
+        return jsonify({'error': 'משתמשת לא נמצאה'}), 401
+
+    days_left = (due_date - date.today()).days
+    trimester = 1 if current_week <= 13 else (2 if current_week <= 27 else 3)
+    week_data = PREGNANCY_WEEKS.get(current_week, PREGNANCY_WEEKS[40])
+
+    system = f"""אתה "לוטוס" 🌸 — הסוכנת האישית של {user['display_name']} באפליקציית מעקב הריון.
+
+## מצב נוכחי
+- שם: {user['display_name']}
+- שבוע הריון: {current_week} מתוך 40
+- טרימסטר: {trimester}
+- מועד לידה צפוי: {due_date.strftime('%d.%m.%Y')}
+- ימים עד הלידה: {days_left}
+- גודל התינוק השבוע: {week_data['size']} ({week_data['length']}, {week_data['weight']})
+
+## פרטי השבוע
+התפתחות עיקרית: {'; '.join(week_data['development'][:2])}
+תחושות שכיחות: {'; '.join(week_data['mom_feelings'][:2])}
+
+## האפליקציה
+ל-{user['display_name']} יש גישה ל:
+- לוח בקרה (Dashboard) עם מידע על השבוע הנוכחי
+- מסע שבועי — ציר זמן של כל 40 שבועות
+- גלריה — לתעד תמונות מההריון, מאורגנות לפי שבוע
+- הצ'אט איתך
+
+## כללי תקשורת
+- עברית בלבד
+- סגנון חם, אמפתי, תומך — כמו חברה טובה שגם יודעת הכל על הריון
+- פוני ב"את" (לאישה)
+- תשובות קצרות — 2-4 משפטים בדרך כלל
+- לא מתחילה ב"בהחלט", "כמובן", "שאלה מצוינת"
+- מדויקת רפואית אבל לא מפחידה
+- לשאלות רפואיות דחופות — תמיד מפנה לרופא/מיילדת"""
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key:
+        return jsonify({'error': 'מפתח API לא מוגדר בשרת'}), 500
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model='claude-sonnet-4-6',
+            max_tokens=600,
+            system=system,
+            messages=messages
+        )
+        reply = response.content[0].text
+        return jsonify({'reply': reply})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5002))
+    app.run(host='0.0.0.0', port=port, debug=True)

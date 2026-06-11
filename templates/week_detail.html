@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}שבוע {{ week_num }} — בטן גדולה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="week-detail-nav-top">
+        <a href="{{ url_for('journey') }}" class="back-link">← חזרה למסע השבועי</a>
+        {% if week_num == current_week %}
+        <span class="current-badge">השבוע שלך 💕</span>
+        {% endif %}
+    </div>
+    <h1 class="page-title">שבוע {{ week_num }} — {{ week_data.size }}</h1>
+    <p class="page-subtitle">
+        {% if week_data.trimester == 1 %}🌱 טרימסטר ראשון
+        {% elif week_data.trimester == 2 %}☀️ טרימסטר שני
+        {% else %}🏁 טרימסטר שלישי
+        {% endif %}
+    </p>
+</div>
+
+<!-- Hero -->
+<div class="week-detail-hero">
+    <div class="week-big-emoji">{{ week_data.emoji }}</div>
+    <div>
+        <h2 class="week-detail-title">הגודל של {{ week_data.size }}</h2>
+        <div class="week-measurements">
+            <div class="measurement">
+                <div class="measurement-value">{{ week_data.length }}</div>
+                <div class="measurement-label">אורך</div>
+            </div>
+            <div class="measurement">
+                <div class="measurement-value">{{ week_data.weight }}</div>
+                <div class="measurement-label">משקל</div>
+            </div>
+        </div>
+        {% if week_data.medical %}
+        <div class="medical-alert">
+            <span class="medical-icon">🏥</span>
+            <span>{{ week_data.medical }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Info Grid -->
+<div class="info-grid">
+    <div class="info-card">
+        <h3>👶 התפתחות התינוק</h3>
+        <ul class="info-list">
+            {% for d in week_data.development %}
+            <li>{{ d }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="info-card">
+        <h3>💜 הרגשות שלך</h3>
+        <ul class="info-list">
+            {% for f in week_data.mom_feelings %}
+            <li>{{ f }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="info-card" style="grid-column: 1 / -1;">
+        <h3>💡 טיפים לשבוע {{ week_num }}</h3>
+        <div class="tips-grid">
+            {% for t in week_data.tips %}
+            <div class="tip-item">
+                <span class="tip-icon">✓</span>
+                <span>{{ t }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="week-nav">
+    {% if week_num > 1 %}
+    <a href="{{ url_for('week_detail', week_num=week_num-1) }}" class="week-nav-btn">← שבוע {{ week_num - 1 }}</a>
+    {% else %}
+    <span></span>
+    {% endif %}
+
+    <a href="{{ url_for('dashboard') }}" class="week-nav-btn center-btn">🏠 לוח בקרה</a>
+
+    {% if week_num < 40 %}
+    <a href="{{ url_for('week_detail', week_num=week_num+1) }}" class="week-nav-btn">שבוע {{ week_num + 1 }} →</a>
+    {% else %}
+    <span></span>
+    {% endif %}
+</div>
+{% endblock %}

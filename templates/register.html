@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הרשמה — בטן גדולה</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="auth-page">
+    <div class="auth-card" style="max-width:460px">
+        <div class="auth-logo">🌸</div>
+        <h1 class="auth-title">הצטרפי אלינו</h1>
+        <p class="auth-subtitle">מלאי את הפרטים ונתחיל את המסע יחד</p>
+
+        {% if error %}
+        <div class="error-msg">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="form-group">
+                <label>השם שלך 💕</label>
+                <input type="text" name="display_name" placeholder="לדוגמה: שרה" required>
+            </div>
+            <div class="form-group">
+                <label>שם משתמש (לכניסה)</label>
+                <input type="text" name="username" placeholder="באנגלית, ללא רווחים" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>סיסמה</label>
+                <input type="password" name="password" placeholder="לפחות 6 תווים" minlength="6" required autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label>באיזה שבוע הריון את? 🤰</label>
+                <div class="week-selector">
+                    <select name="current_week" required id="weekSelect" onchange="updateWeekDisplay(this.value)">
+                        {% for w in range(1, 41) %}
+                        <option value="{{ w }}" {% if w == 12 %}selected{% endif %}>שבוע {{ w }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="week-hint" id="weekHint">
+                        טרימסטר ראשון — סוף השליש הראשון 🌱
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">בואי נתחיל! 🌸</button>
+        </form>
+
+        <p class="auth-link">
+            כבר יש לי חשבון. <a href="{{ url_for('login') }}">כניסה</a>
+        </p>
+    </div>
+</div>
+
+<script>
+const hints = {
+    1: "טרימסטר ראשון — תחילת המסע המדהים 🌱",
+    2: "טרימסטר ראשון — ההפריה בדרך 🌱",
+    3: "טרימסטר ראשון — ההשתרשות מתחילה ✨",
+    4: "טרימסטר ראשון — ייתכן שהטסט חיובי! 🌸",
+    5: "טרימסטר ראשון — הלב מתחיל לפעם! 💓",
+    6: "טרימסטר ראשון — אחד השבועות הקשים 😅",
+    7: "טרימסטר ראשון — ניצני ידיים ורגליים!",
+    8: "טרימסטר ראשון — כל האיברים קיימים! 🎉",
+    9: "טרימסטר ראשון — רשמית 'עובר'! 🍇",
+    10: "טרימסטר ראשון — המוח מתפתח מהר",
+    11: "טרימסטר ראשון — כמעט סוף השליש 💪",
+    12: "טרימסטר ראשון — סוף השליש הראשון! 🥳",
+    13: "טרימסטר ראשון — הסיכון יורד 🎊",
+    14: "טרימסטר שני — ברוכה הבאה לשליש שני! ☀️",
+    15: "טרימסטר שני — אולי תרגישי תנועות ראשונות!",
+    16: "טרימסטר שני — ניתן לגלות מין 👶",
+    17: "טרימסטר שני — תנועות ברורות יותר 🥰",
+    18: "טרימסטר שני — שבוע האולטרסאונד האנטומי! 🔬",
+    19: "טרימסטר שני — הבטן ברורה לכל 😊",
+    20: "טרימסטר שני — חצי הדרך! 🎉🎉",
+    21: "טרימסטר שני — תנועות חזקות!",
+    22: "טרימסטר שני — הלב שומעים בסטטוסקופ",
+    23: "טרימסטר שני — שמיעה מלאה",
+    24: "טרימסטר שני — שבוע הכדאיות! 🌟",
+    25: "טרימסטר שני — בגדלת יפה",
+    26: "טרימסטר שני — העיניים נפתחות!",
+    27: "טרימסטר שני — שבוע אחרון לשליש שני",
+    28: "טרימסטר שלישי — ברוכה הבאה לשליש שלישי! 🏁",
+    29: "טרימסטר שלישי — עצמות מתחזקות",
+    30: "טרימסטר שלישי — מוח מתקמט",
+    31: "טרימסטר שלישי — 9 שבועות לסיום!",
+    32: "טרימסטר שלישי — מתרגל נשימות",
+    33: "טרימסטר שלישי — הגולגולת מתקשת",
+    34: "טרימסטר שלישי — כמעט מוכן! 6 שבועות",
+    35: "טרימסטר שלישי — כליות מלאות 💪",
+    36: "טרימסטר שלישי — ריאות מוכנות! 🫁",
+    37: "טרימסטר שלישי — Early Term! 3 שבועות",
+    38: "טרימסטר שלישי — Full Term! כל יום הוא יום הלידה 🌟",
+    39: "טרימסטר שלישי — מוכנה לכל רגע!",
+    40: "טרימסטר שלישי — שבוע מועד הלידה! 🍉🎊"
+};
+
+function updateWeekDisplay(week) {
+    const hint = document.getElementById('weekHint');
+    hint.textContent = hints[week] || '';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateWeekDisplay(12);
+});
+</script>
+</body>
+</html>

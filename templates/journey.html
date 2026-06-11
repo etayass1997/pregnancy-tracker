@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}מסע שבועי — בטן גדולה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🗓️ מסע שבועי</h1>
+    <p class="page-subtitle">40 שבועות של פלא — את ב<strong>שבוע {{ current_week }}</strong></p>
+</div>
+
+<div class="trimester-section">
+    <div class="trimester-header t1">🌱 טרימסטר ראשון — שבועות 1–13</div>
+    <div class="journey-grid">
+        {% for w in range(1, 14) %}
+        {% set wd = weeks[w] %}
+        <a href="{{ url_for('week_detail', week_num=w) }}"
+           class="week-card {% if w == current_week %}current{% elif w < current_week %}past{% else %}future{% endif %}">
+            <div class="wc-emoji">{{ wd.emoji }}</div>
+            <div class="wc-num">{{ w }}</div>
+            <div class="wc-size">{{ wd.size }}</div>
+            {% if w == current_week %}<div class="wc-badge">עכשיו 💕</div>{% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="trimester-section">
+    <div class="trimester-header t2">☀️ טרימסטר שני — שבועות 14–27</div>
+    <div class="journey-grid">
+        {% for w in range(14, 28) %}
+        {% set wd = weeks[w] %}
+        <a href="{{ url_for('week_detail', week_num=w) }}"
+           class="week-card {% if w == current_week %}current{% elif w < current_week %}past{% else %}future{% endif %}">
+            <div class="wc-emoji">{{ wd.emoji }}</div>
+            <div class="wc-num">{{ w }}</div>
+            <div class="wc-size">{{ wd.size }}</div>
+            {% if w == current_week %}<div class="wc-badge">עכשיו 💕</div>{% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="trimester-section">
+    <div class="trimester-header t3">🏁 טרימסטר שלישי — שבועות 28–40</div>
+    <div class="journey-grid">
+        {% for w in range(28, 41) %}
+        {% set wd = weeks[w] %}
+        <a href="{{ url_for('week_detail', week_num=w) }}"
+           class="week-card {% if w == current_week %}current{% elif w < current_week %}past{% else %}future{% endif %}">
+            <div class="wc-emoji">{{ wd.emoji }}</div>
+            <div class="wc-num">{{ w }}</div>
+            <div class="wc-size">{{ wd.size }}</div>
+            {% if w == current_week %}<div class="wc-badge">עכשיו 💕</div>{% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

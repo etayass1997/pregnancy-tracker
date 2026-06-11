@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}לוח בקרה — בטן גדולה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">שלום {{ user.display_name }}! 💕</h1>
+    <p class="page-subtitle">
+        {% if trimester == 1 %}טרימסטר ראשון 🌱
+        {% elif trimester == 2 %}טרימסטר שני ☀️
+        {% else %}טרימסטר שלישי 🏁
+        {% endif %}
+        · מועד לידה: {{ due_date.strftime('%d.%m.%Y') }}
+    </p>
+</div>
+
+<!-- Progress Bar -->
+<div class="progress-card">
+    <div class="progress-top">
+        <span class="progress-label">שבוע {{ current_week }} מתוך 40</span>
+        <span class="progress-pct">{{ progress }}% ✨</span>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ progress }}%"></div>
+    </div>
+    <div class="progress-bottom">
+        <span>שבוע 1</span>
+        <span>{% if days_left > 0 %}עוד {{ days_left }} ימים{% else %}הגיע הזמן! 🎉{% endif %}</span>
+        <span>שבוע 40</span>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-value">{{ current_week }}</div>
+        <div class="stat-label">שבוע הריון</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ [days_left, 0] | max }}</div>
+        <div class="stat-label">ימים עד הלידה</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ trimester }}</div>
+        <div class="stat-label">טרימסטר</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ week_data.size }}</div>
+        <div class="stat-label">גודל התינוק</div>
+    </div>
+</div>
+
+<!-- Week Hero Card -->
+<div class="week-hero">
+    <div class="week-emoji-big">{{ week_data.emoji }}</div>
+    <div class="week-hero-content">
+        <div class="week-hero-title">שבוע {{ current_week }} — {{ week_data.size }}</div>
+        <div class="week-measurements">
+            <div class="measurement">
+                <div class="measurement-value">{{ week_data.length }}</div>
+                <div class="measurement-label">אורך</div>
+            </div>
+            <div class="measurement">
+                <div class="measurement-value">{{ week_data.weight }}</div>
+                <div class="measurement-label">משקל</div>
+            </div>
+        </div>
+        <ul class="development-list">
+            {% for point in week_data.development[:3] %}
+            <li>{{ point }}</li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('week_detail', week_num=current_week) }}" class="btn btn-outline" style="margin-top:16px; display:inline-flex">
+            לכל פרטי השבוע ←
+        </a>
+    </div>
+</div>
+
+<!-- Info Cards Grid -->
+<div class="info-grid">
+    <!-- Mom Feelings -->
+    <div class="info-card">
+        <h3>💜 הרגשות השבוע</h3>
+        <ul class="info-list">
+            {% for f in week_data.mom_feelings %}
+            <li>{{ f }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Tips -->
+    <div class="info-card">
+        <h3>💡 טיפים לשבוע</h3>
+        <ul class="info-list">
+            {% for t in week_data.tips %}
+            <li>{{ t }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Medical -->
+    {% if week_data.medical %}
+    <div class="info-card medical-card">
+        <h3>🏥 מה חשוב לדעת</h3>
+        <p class="medical-text">{{ week_data.medical }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Next Week Peek -->
+    {% if next_week_data and next_week <= 40 %}
+    <div class="info-card next-week-card">
+        <h3>👀 מה מחכה בשבוע {{ next_week }}?</h3>
+        <div class="next-week-preview">
+            <span class="nw-emoji">{{ next_week_data.emoji }}</span>
+            <div>
+                <div class="nw-size">{{ next_week_data.size }}</div>
+                <div class="nw-dev">{{ next_week_data.development[0] }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
