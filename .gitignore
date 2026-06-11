@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 data/users.json
+!data/.gitkeep
 uploads/
 *.png
 .env
