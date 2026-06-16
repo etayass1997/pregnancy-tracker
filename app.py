@@ -7,6 +7,12 @@ import uuid
 from datetime import datetime, date, timedelta
 from pregnancy_data import PREGNANCY_WEEKS
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'pregnancy-lotus-secret-2026')
 
@@ -80,6 +86,9 @@ def register():
         display_name = request.form.get('display_name', '').strip()
         password = request.form.get('password', '')
         current_week = int(request.form.get('current_week', 1))
+        baby_gender = request.form.get('baby_gender', 'unknown')
+        if baby_gender not in ('boy', 'girl', 'unknown'):
+            baby_gender = 'unknown'
 
         if not username or not password or not display_name:
             return render_template('register.html', error='יש למלא את כל השדות')
@@ -95,6 +104,7 @@ def register():
             'display_name': display_name,
             'registration_date': date.today().isoformat(),
             'registration_week': current_week,
+            'baby_gender': baby_gender,
             'photos': []
         }
         save_users(users)
@@ -200,6 +210,9 @@ def chat():
     trimester = 1 if current_week <= 13 else (2 if current_week <= 27 else 3)
     week_data = PREGNANCY_WEEKS.get(current_week, PREGNANCY_WEEKS[40])
 
+    gender_map = {'boy': 'בן', 'girl': 'בת', 'unknown': 'לא ידוע עדיין'}
+    baby_gender_display = gender_map.get(user.get('baby_gender', 'unknown'), 'לא ידוע עדיין')
+
     system = f"""אתה "הריונית" 🌸 — הסוכנת האישית של {user['display_name']} באפליקציית מעקב הריון.
 
 ## מצב נוכחי
@@ -208,6 +221,7 @@ def chat():
 - טרימסטר: {trimester}
 - מועד לידה צפוי: {due_date.strftime('%d.%m.%Y')}
 - ימים עד הלידה: {days_left}
+- מין התינוק: {baby_gender_display}
 - גודל התינוק השבוע: {week_data['size']} ({week_data['length']}, {week_data['weight']})
 
 ## פרטי השבוע

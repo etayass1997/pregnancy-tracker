@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}בטן גדולה 💕{% endblock %}</title>
+    <title>{% block title %}בטן מלאה 💕{% endblock %}</title>
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#F48FB1">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="בטן גדולה">
+    <meta name="apple-mobile-web-app-title" content="בטן מלאה">
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -18,7 +18,7 @@
 <nav class="sidebar">
     <div class="sidebar-logo">
         <div class="logo-icon">💕</div>
-        <div class="logo-text">בטן גדולה</div>
+        <div class="logo-text">בטן מלאה</div>
     </div>
     <div class="user-greeting">שלום, {{ user.display_name }}!</div>
 
@@ -70,7 +70,8 @@
 {% if session.get('username') %}
 <!-- Lotus Chat Widget -->
 <button class="chat-fab" onclick="toggleChat()" id="chatFab" title="שוחחי עם הריונית">
-    🌸
+    <span class="chat-fab-figure">🤰</span>
+    <span class="chat-fab-label">שאלי אותי</span>
 </button>
 <div class="chat-panel" id="chatPanel">
     <div class="chat-header">

@@ -361,20 +361,47 @@ main.with-sidebar { margin-right: 230px; }
 .week-selector select { margin-bottom: 6px; }
 .week-hint { font-size: 13px; color: var(--pink); font-weight: 500; min-height: 18px; }
 
+.gender-selector { display: flex; gap: 8px; flex-wrap: wrap; }
+.gender-option { flex: 1; min-width: 90px; cursor: pointer; }
+.gender-option input[type="radio"] { display: none; }
+.gender-btn {
+    display: block; text-align: center; padding: 10px 8px;
+    border: 2px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 500; color: var(--text-muted);
+    background: var(--white); transition: all 0.2s; white-space: nowrap;
+}
+.gender-option input[type="radio"]:checked + .gender-btn {
+    border-color: var(--pink); background: var(--pink-pale);
+    color: var(--pink); font-weight: 700;
+}
+
 /* ─── Chat Widget ─── */
 .chat-fab {
-    position: fixed; bottom: 28px; left: 28px;
-    width: 58px; height: 58px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--pink), var(--lavender));
-    border: none; font-size: 26px; cursor: pointer;
-    box-shadow: 0 4px 20px rgba(212,115,154,0.45);
+    position: fixed; bottom: 24px; left: 28px;
+    width: 72px; height: 96px;
+    border-radius: 36px 36px 28px 28px;
+    background: linear-gradient(170deg, #fce4f0 0%, #e8d5f5 100%);
+    border: 2px solid rgba(212,115,154,0.3);
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(212,115,154,0.4), 0 2px 8px rgba(155,127,212,0.2);
     z-index: 1000; transition: all 0.3s;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-end;
+    padding-bottom: 10px; gap: 2px;
 }
-.chat-fab:hover { transform: scale(1.12); box-shadow: 0 6px 28px rgba(212,115,154,0.55); }
+.chat-fab:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 12px 36px rgba(212,115,154,0.55), 0 4px 14px rgba(155,127,212,0.3);
+}
+.chat-fab-figure { font-size: 48px; line-height: 1; display: block; }
+.chat-fab-label {
+    font-size: 10px; font-weight: 700; color: var(--pink);
+    font-family: 'Heebo', sans-serif; letter-spacing: 0;
+    white-space: nowrap;
+}
 
 .chat-panel {
-    position: fixed; bottom: 100px; left: 28px;
+    position: fixed; bottom: 136px; left: 28px;
     width: 360px; height: 500px;
     background: var(--white); border-radius: 20px;
     box-shadow: 0 12px 48px rgba(61,43,61,0.18);
@@ -552,6 +579,7 @@ main.with-sidebar { margin-right: 230px; }
     .week-hero { flex-direction: column; }
     .week-detail-hero { flex-direction: column; }
     .tips-grid { grid-template-columns: 1fr; }
-    .chat-panel { left: 12px; right: 12px; width: auto; bottom: 80px; }
+    .chat-panel { left: 12px; right: 12px; width: auto; bottom: 136px; }
+    .chat-fab { left: 16px; bottom: 16px; }
     .journey-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
 }

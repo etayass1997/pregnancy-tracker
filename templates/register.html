@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>הרשמה — בטן גדולה</title>
+    <title>הרשמה — בטן מלאה</title>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -30,6 +30,23 @@
             <div class="form-group">
                 <label>סיסמה</label>
                 <input type="password" name="password" placeholder="לפחות 6 תווים" minlength="6" required autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label>מין התינוק 👶</label>
+                <div class="gender-selector">
+                    <label class="gender-option">
+                        <input type="radio" name="baby_gender" value="boy">
+                        <span class="gender-btn">👦 בן</span>
+                    </label>
+                    <label class="gender-option">
+                        <input type="radio" name="baby_gender" value="girl">
+                        <span class="gender-btn">👧 בת</span>
+                    </label>
+                    <label class="gender-option">
+                        <input type="radio" name="baby_gender" value="unknown" checked>
+                        <span class="gender-btn">🤷 עדיין לא יודעת</span>
+                    </label>
+                </div>
             </div>
             <div class="form-group">
                 <label>באיזה שבוע הריון את? 🤰</label>
