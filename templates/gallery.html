@@ -5,30 +5,16 @@
 <div class="gallery-header">
     <div>
         <h1 class="page-title">📸 גלריית ההריון שלי</h1>
-        <p class="page-subtitle">תעדי את כל הרגעים המיוחדים — {{ photos|length }} תמונות</p>
+        <p class="page-subtitle">תעדי את כל הרגעים המיוחדים — <span id="photoCount">0</span> תמונות</p>
     </div>
     <button class="btn btn-primary" onclick="openUploadModal()">
         + העלאת תמונה
     </button>
 </div>
 
-{% if photos %}
-<div class="gallery-grid" id="galleryGrid">
-    {% for photo in photos %}
-    <div class="photo-card" id="photo-{{ photo.filename }}">
-        <img src="{{ url_for('serve_photo', username=session.username, filename=photo.filename) }}"
-             alt="שבוע {{ photo.week }}"
-             loading="lazy">
-        <div class="photo-week-badge">שבוע {{ photo.week }}</div>
-        {% if photo.caption %}
-        <div class="photo-overlay">{{ photo.caption }}</div>
-        {% endif %}
-        <button class="photo-delete" onclick="deletePhoto('{{ photo.filename }}', event)" title="מחיקה">🗑️</button>
-    </div>
-    {% endfor %}
-</div>
-{% else %}
-<div class="empty-gallery">
+<div class="gallery-grid" id="galleryGrid" style="display:none"></div>
+
+<div class="empty-gallery" id="emptyGallery" style="display:none">
     <div class="empty-icon">📷</div>
     <h3>עדיין אין תמונות</h3>
     <p>התחילי לתעד את ההריון שלך — כל שבוע הוא רגע מיוחד!</p>
@@ -36,45 +22,40 @@
         העלי תמונה ראשונה 💕
     </button>
 </div>
-{% endif %}
 
 <!-- Upload Modal -->
 <div class="modal" id="uploadModal">
     <div class="modal-card">
         <h2 class="modal-title">📸 העלאת תמונה</h2>
-        <form id="uploadForm">
-            <div class="upload-area" id="uploadArea">
-                <input type="file" name="photo" id="photoFile" accept="image/*" onchange="handleFileSelect(this)">
-                <div class="upload-icon">📷</div>
-                <div class="upload-text">לחצי לבחירת תמונה<br>או גררי לכאן</div>
-            </div>
-            <div id="photoPreview"></div>
+        <div class="upload-area" id="uploadArea">
+            <input type="file" id="photoFile" accept="image/*" onchange="handleFileSelect(this)">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">לחצי לבחירת תמונה<br>או גררי לכאן</div>
+        </div>
+        <div id="photoPreview"></div>
 
-            <div class="form-group" style="margin-top:16px">
-                <label>שבוע</label>
-                <select name="week">
-                    {% for w in range(1, 41) %}
-                    <option value="{{ w }}" {% if w == current_week %}selected{% endif %}>
-                        שבוע {{ w }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
+        <div class="form-group" style="margin-top:16px">
+            <label>שבוע</label>
+            <select id="uploadWeek">
+                {% for w in range(1, 41) %}
+                <option value="{{ w }}" {% if w == current_week %}selected{% endif %}>שבוע {{ w }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-            <div class="form-group">
-                <label>כיתוב (אופציונלי)</label>
-                <input type="text" name="caption" placeholder="תארי את הרגע...">
-            </div>
+        <div class="form-group">
+            <label>כיתוב (אופציונלי)</label>
+            <input type="text" id="uploadCaption" placeholder="תארי את הרגע...">
+        </div>
 
-            <div style="display:flex;gap:12px;margin-top:8px">
-                <button type="button" class="btn btn-primary" id="uploadBtn" onclick="submitUpload()">
-                    העלאה
-                </button>
-                <button type="button" class="btn btn-outline" onclick="closeUploadModal()">
-                    ביטול
-                </button>
-            </div>
-        </form>
+        <div style="display:flex;gap:12px;margin-top:8px">
+            <button type="button" class="btn btn-primary" id="uploadBtn" onclick="submitUpload()">שמירה</button>
+            <button type="button" class="btn btn-outline" onclick="closeUploadModal()">ביטול</button>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>document.addEventListener('DOMContentLoaded', loadGallery);</script>
 {% endblock %}

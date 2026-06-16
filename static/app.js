@@ -69,7 +69,115 @@ async function sendMessage() {
     input.focus();
 }
 
-// ─── Gallery ───────────────────────────────────────────────────────────────
+// ─── Gallery (IndexedDB — photos stored locally on device) ─────────────────
+
+const _DB_NAME = 'beten-gedola-photos';
+const _DB_VER = 1;
+const _STORE = 'photos';
+let _db = null;
+
+function _openDB() {
+    return new Promise((resolve, reject) => {
+        if (_db) { resolve(_db); return; }
+        const req = indexedDB.open(_DB_NAME, _DB_VER);
+        req.onupgradeneeded = e => {
+            const d = e.target.result;
+            if (!d.objectStoreNames.contains(_STORE)) {
+                d.createObjectStore(_STORE, { keyPath: 'id', autoIncrement: true });
+            }
+        };
+        req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+        req.onerror = e => reject(e.target.error);
+    });
+}
+
+async function _getAllPhotos() {
+    const d = await _openDB();
+    return new Promise((resolve, reject) => {
+        const req = d.transaction(_STORE, 'readonly').objectStore(_STORE).getAll();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = e => reject(e.target.error);
+    });
+}
+
+async function _addPhoto(blob, week, caption) {
+    const d = await _openDB();
+    return new Promise((resolve, reject) => {
+        const req = d.transaction(_STORE, 'readwrite').objectStore(_STORE).add({
+            blob,
+            week: parseInt(week),
+            caption,
+            uploadedAt: new Date().toLocaleDateString('he-IL')
+        });
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = e => reject(e.target.error);
+    });
+}
+
+async function _deletePhoto(id) {
+    const d = await _openDB();
+    return new Promise((resolve, reject) => {
+        const req = d.transaction(_STORE, 'readwrite').objectStore(_STORE).delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = e => reject(e.target.error);
+    });
+}
+
+async function loadGallery() {
+    const grid = document.getElementById('galleryGrid');
+    const empty = document.getElementById('emptyGallery');
+    const countEl = document.getElementById('photoCount');
+    if (!grid) return;
+
+    const photos = (await _getAllPhotos()).sort((a, b) => a.week - b.week);
+    if (countEl) countEl.textContent = photos.length;
+
+    if (photos.length === 0) {
+        grid.style.display = 'none';
+        if (empty) empty.style.display = '';
+        return;
+    }
+
+    if (empty) empty.style.display = 'none';
+    grid.style.display = '';
+    grid.innerHTML = '';
+
+    for (const photo of photos) {
+        const url = URL.createObjectURL(photo.blob);
+        const card = document.createElement('div');
+        card.className = 'photo-card';
+        card.id = 'photo-' + photo.id;
+        card.innerHTML = `
+            <img src="${url}" alt="שבוע ${photo.week}" loading="lazy">
+            <div class="photo-week-badge">שבוע ${photo.week}</div>
+            ${photo.caption ? `<div class="photo-overlay">${photo.caption.replace(/</g,'&lt;')}</div>` : ''}
+            <button class="photo-delete" onclick="deletePhotoLocal(${photo.id})" title="מחיקה">🗑️</button>
+        `;
+        grid.appendChild(card);
+    }
+}
+
+async function deletePhotoLocal(id) {
+    if (!confirm('למחוק את התמונה?')) return;
+    const card = document.getElementById('photo-' + id);
+    if (card) card.style.opacity = '0.4';
+    try {
+        await _deletePhoto(id);
+        if (card) card.remove();
+        const photos = await _getAllPhotos();
+        const countEl = document.getElementById('photoCount');
+        if (countEl) countEl.textContent = photos.length;
+        if (photos.length === 0) {
+            const grid = document.getElementById('galleryGrid');
+            const empty = document.getElementById('emptyGallery');
+            if (grid) grid.style.display = 'none';
+            if (empty) empty.style.display = '';
+        }
+    } catch {
+        if (card) card.style.opacity = '1';
+        alert('שגיאה במחיקה');
+    }
+}
 
 function openUploadModal() {
     const modal = document.getElementById('uploadModal');
@@ -80,11 +188,11 @@ function closeUploadModal() {
     const modal = document.getElementById('uploadModal');
     if (!modal) return;
     modal.classList.remove('open');
-    document.getElementById('uploadForm').reset();
+    document.getElementById('uploadCaption').value = '';
     document.getElementById('photoPreview').innerHTML = '';
     const area = document.getElementById('uploadArea');
     area.innerHTML = `
-        <input type="file" name="photo" id="photoFile" accept="image/*" onchange="handleFileSelect(this)">
+        <input type="file" id="photoFile" accept="image/*" onchange="handleFileSelect(this)">
         <div class="upload-icon">📷</div>
         <div class="upload-text">לחצי לבחירת תמונה<br>או גררי לכאן</div>
     `;
@@ -94,7 +202,7 @@ function closeUploadModal() {
 function bindUploadAreaClick() {
     const area = document.getElementById('uploadArea');
     if (!area) return;
-    area.addEventListener('click', () => document.getElementById('photoFile').click());
+    area.addEventListener('click', () => document.getElementById('photoFile')?.click());
     area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('dragover'); });
     area.addEventListener('dragleave', () => area.classList.remove('dragover'));
     area.addEventListener('drop', e => {
@@ -122,55 +230,27 @@ function handleFileSelect(input) {
 }
 
 async function submitUpload() {
-    const form = document.getElementById('uploadForm');
     const fileInput = document.getElementById('photoFile');
+    const week = document.getElementById('uploadWeek').value;
+    const caption = document.getElementById('uploadCaption').value.trim();
     const btn = document.getElementById('uploadBtn');
 
-    if (!fileInput.files[0]) {
+    if (!fileInput || !fileInput.files[0]) {
         alert('יש לבחור תמונה');
         return;
     }
 
     btn.disabled = true;
-    btn.textContent = 'מעלה...';
+    btn.textContent = 'שומרת...';
 
-    const fd = new FormData(form);
     try {
-        const res = await fetch('/upload', { method: 'POST', body: fd });
-        const data = await res.json();
-        if (data.success) {
-            location.reload();
-        } else {
-            alert(data.error || 'שגיאה בהעלאה');
-            btn.disabled = false;
-            btn.textContent = 'העלאה';
-        }
-    } catch {
-        alert('שגיאת רשת, נסי שוב');
+        await _addPhoto(fileInput.files[0], week, caption);
+        closeUploadModal();
+        await loadGallery();
+    } catch (e) {
+        alert('שגיאה בשמירה: ' + e.message);
         btn.disabled = false;
-        btn.textContent = 'העלאה';
-    }
-}
-
-async function deletePhoto(filename, event) {
-    event.stopPropagation();
-    if (!confirm('למחוק את התמונה?')) return;
-
-    const card = document.getElementById('photo-' + filename);
-    if (card) card.style.opacity = '0.4';
-
-    try {
-        const res = await fetch('/delete-photo/' + encodeURIComponent(filename), { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-            if (card) card.remove();
-        } else {
-            if (card) card.style.opacity = '1';
-            alert('לא הצלחתי למחוק');
-        }
-    } catch {
-        if (card) card.style.opacity = '1';
-        alert('שגיאת רשת');
+        btn.textContent = 'שמירה';
     }
 }
 
@@ -325,7 +405,6 @@ function filterNames(filter, tabEl) {
 document.addEventListener('DOMContentLoaded', function () {
     bindUploadAreaClick();
 
-    // Close modals on backdrop click
     const modalHandlers = [
         ['uploadModal', closeUploadModal],
         ['journalModal', closeJournalModal],

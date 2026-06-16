@@ -1,6 +1,5 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
 import anthropic
 import json
 import os
@@ -13,11 +12,8 @@ app.secret_key = os.environ.get('SECRET_KEY', 'pregnancy-lotus-secret-2026')
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, 'data', 'users.json')
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'heif'}
 
 os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 def load_users():
@@ -43,10 +39,6 @@ def get_due_date(user_data):
     reg_date = datetime.strptime(user_data['registration_date'], '%Y-%m-%d').date()
     weeks_remaining = 40 - user_data['registration_week']
     return reg_date + timedelta(weeks=weeks_remaining)
-
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 def get_user_context():
@@ -187,73 +179,7 @@ def gallery():
     user, current_week, due_date, _ = get_user_context()
     if not user:
         return redirect(url_for('login'))
-
-    photos = sorted(user.get('photos', []), key=lambda p: p.get('week', 0))
-    return render_template('gallery.html',
-        user=user,
-        current_week=current_week,
-        photos=photos
-    )
-
-
-@app.route('/upload', methods=['POST'])
-def upload_photo():
-    if 'username' not in session:
-        return jsonify({'error': 'לא מחוברת'}), 401
-    if 'photo' not in request.files:
-        return jsonify({'error': 'לא נבחרה תמונה'}), 400
-
-    file = request.files['photo']
-    week = request.form.get('week', 1, type=int)
-    caption = request.form.get('caption', '').strip()
-
-    if not file.filename or not allowed_file(file.filename):
-        return jsonify({'error': 'סוג קובץ לא נתמך'}), 400
-
-    username = session['username']
-    user_dir = os.path.join(UPLOAD_FOLDER, username)
-    os.makedirs(user_dir, exist_ok=True)
-
-    ext = file.filename.rsplit('.', 1)[1].lower()
-    filename = f"week{week:02d}_{uuid.uuid4().hex[:8]}.{ext}"
-    file.save(os.path.join(user_dir, filename))
-
-    users = load_users()
-    users[username]['photos'].append({
-        'filename': filename,
-        'week': week,
-        'caption': caption,
-        'uploaded_at': datetime.now().strftime('%d.%m.%Y')
-    })
-    save_users(users)
-    return jsonify({'success': True, 'filename': filename})
-
-
-@app.route('/delete-photo/<filename>', methods=['DELETE'])
-def delete_photo(filename):
-    if 'username' not in session:
-        return jsonify({'error': 'לא מחוברת'}), 401
-
-    username = session['username']
-    safe_filename = secure_filename(filename)
-    filepath = os.path.join(UPLOAD_FOLDER, username, safe_filename)
-    if os.path.exists(filepath):
-        os.remove(filepath)
-
-    users = load_users()
-    users[username]['photos'] = [
-        p for p in users[username].get('photos', []) if p['filename'] != safe_filename
-    ]
-    save_users(users)
-    return jsonify({'success': True})
-
-
-@app.route('/uploads/<username>/<filename>')
-def serve_photo(username, filename):
-    if 'username' not in session or session['username'] != username:
-        return '', 403
-    user_dir = os.path.join(UPLOAD_FOLDER, username)
-    return send_from_directory(user_dir, secure_filename(filename))
+    return render_template('gallery.html', user=user, current_week=current_week)
 
 
 @app.route('/api/chat', methods=['POST'])
