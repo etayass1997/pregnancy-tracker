@@ -3,5 +3,5 @@ __pycache__/
 data/users.json
 !data/.gitkeep
 uploads/
-*.png
+screen_*.png
 .env
