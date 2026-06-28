@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}מד מצב רוח — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">💜 מד מצב רוח</h1>
+    <p class="page-subtitle">איך את מרגישה היום? עקבי אחרי מצב הרוח לאורך ההריון 🌸</p>
+</div>
+
+<div class="mood-layout">
+    <div class="mood-select-card">
+        <h3>איך את היום?</h3>
+        <div class="mood-options" id="moodOptions">
+            {% for opt in mood_options %}
+            <div class="mood-option {% if today_mood and today_mood.key == opt.key %}selected{% endif %}"
+                 data-key="{{ opt.key }}" onclick="selectMood('{{ opt.key }}')">
+                <span class="mood-emoji">{{ opt.emoji }}</span>
+                <span>{{ opt.label }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        <textarea class="mood-note-input" id="moodNote" placeholder="הערה (לא חובה)...">{{ today_mood.note if today_mood and today_mood.note else '' }}</textarea>
+        <button class="mood-save-btn" onclick="saveMood()">שמרי את מצב הרוח 💕</button>
+        <div class="mood-save-msg" id="moodSaveMsg"></div>
+    </div>
+
+    <div class="mood-calendar-card">
+        <h3>14 הימים האחרונים</h3>
+        <div class="mood-calendar-grid" id="moodCalendar">
+            <div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">טוענת...</div>
+        </div>
+        <div style="margin-top:20px; padding:14px 16px; background:var(--pink-pale); border-radius:12px; font-size:13px; color:var(--text-muted); line-height:1.6; border:1px solid var(--border);">
+            💡 שינויי מצב רוח במהלך ההריון הם לגמרי נורמליים — הגוף שלך עובד קשה ומייצר הורמונים שמשפיעים על הרגשות. דאגי לנוח, לאכול טוב ולבקש עזרה כשצריך.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedMoodKey = '{{ today_mood.key if today_mood else "" }}';
+const todayIso = new Date().toISOString().split('T')[0];
+
+function selectMood(key) {
+    selectedMoodKey = key;
+    document.querySelectorAll('.mood-option').forEach(el =>
+        el.classList.toggle('selected', el.dataset.key === key));
+}
+
+async function saveMood() {
+    if (!selectedMoodKey) {
+        document.getElementById('moodSaveMsg').textContent = 'בחרי מצב רוח קודם 🌸';
+        return;
+    }
+    const note = document.getElementById('moodNote').value.trim();
+    const r = await fetch('/api/mood', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({mood_key: selectedMoodKey, note})
+    });
+    if (r.ok) {
+        document.getElementById('moodSaveMsg').textContent = '✓ נשמר! 💕';
+        setTimeout(() => document.getElementById('moodSaveMsg').textContent = '', 3000);
+        loadMoodHistory();
+    }
+}
+
+async function loadMoodHistory() {
+    const r = await fetch('/api/mood/history');
+    const data = await r.json();
+    const hebrewDays = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+    const container = document.getElementById('moodCalendar');
+    container.innerHTML = data.days.map(d => {
+        const dt = new Date(d.date + 'T12:00:00');
+        const dayNum = dt.getDate();
+        const mon = dt.getMonth() + 1;
+        const isToday = d.date === todayIso;
+        const classes = ['mood-day-cell', d.mood ? 'has-mood' : '', isToday ? 'today-cell' : ''].filter(Boolean).join(' ');
+        const emoji = d.mood ? d.mood.emoji : '<span style="opacity:0.15;font-size:14px">•</span>';
+        const title = d.mood ? `${d.mood.label}${d.mood.note ? ': ' + d.mood.note : ''}` : '';
+        return `<div class="${classes}" title="${title}">
+            <span class="mood-day-emoji">${emoji}</span>
+            <span class="mood-day-date">${dayNum}/${mon}</span>
+        </div>`;
+    }).join('');
+}
+
+loadMoodHistory();
+</script>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}צ'קליסט לידה — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">📋 צ'קליסט לידה</h1>
+    <p class="page-subtitle">תיק בית החולים ורשימת ההכנה ללידה — {{ done }}/{{ total }} הושלמו</p>
+</div>
+
+<div class="checklist-top">
+    <div class="checklist-progress-card">
+        <div class="ring-wrap">
+            <svg width="160" height="160" viewBox="0 0 160 160">
+                <circle class="ring-bg" cx="80" cy="80" r="66"/>
+                <circle class="ring-fill" id="ringFill" cx="80" cy="80" r="66"
+                        stroke-dasharray="{{ circumference }}"
+                        stroke-dashoffset="{{ offset }}"/>
+            </svg>
+            <div class="ring-text">
+                <span class="ring-pct" id="ringPct">{{ ((done / total * 100) | round | int) if total > 0 else 0 }}%</span>
+                <span class="ring-label">הושלם</span>
+            </div>
+        </div>
+        <div class="ring-done" id="ringDone">{{ done }} / {{ total }}</div>
+        <div class="checklist-congrats" id="checklistCongrats">
+            {% if done == total %}🎉 כל הכבוד! מוכנה ללידה!{% elif done > total * 0.7 %}💪 כמעט שם!{% elif done > 0 %}🌸 כך ממשיכים!{% endif %}
+        </div>
+    </div>
+
+    <div class="checklist-items-card">
+        {% for cat in checklist %}
+        <div class="checklist-category">
+            <div class="checklist-cat-title">{{ cat.cat }}</div>
+            <div class="checklist-items-list">
+                {% for item in cat.entries %}
+                <div class="checklist-item {% if item.checked %}checked{% endif %}"
+                     id="ci_{{ item.key }}" onclick="toggleItem('{{ item.key }}')">
+                    <div class="check-box" id="cb_{{ item.key }}">{% if item.checked %}✓{% endif %}</div>
+                    <span class="check-text">{{ item.text }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CIRCUMFERENCE = {{ circumference }};
+
+async function toggleItem(key) {
+    const r = await fetch('/api/checklist', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({key})
+    });
+    const d = await r.json();
+
+    const item = document.getElementById('ci_' + key);
+    const box  = document.getElementById('cb_' + key);
+    item.classList.toggle('checked', d.checked);
+    box.textContent = d.checked ? '✓' : '';
+
+    updateRing(d.done, d.total);
+}
+
+function updateRing(done, total) {
+    const pct = total > 0 ? Math.round(done / total * 100) : 0;
+    const offset = CIRCUMFERENCE * (1 - pct / 100);
+    document.getElementById('ringFill').style.strokeDashoffset = offset;
+    document.getElementById('ringPct').textContent = pct + '%';
+    document.getElementById('ringDone').textContent = done + ' / ' + total;
+    const c = document.getElementById('checklistCongrats');
+    if (done === total)        c.textContent = '🎉 כל הכבוד! מוכנה ללידה!';
+    else if (done > total*0.7) c.textContent = '💪 כמעט שם!';
+    else if (done > 0)         c.textContent = '🌸 כך ממשיכים!';
+    else                       c.textContent = '';
+}
+</script>
+{% endblock %}

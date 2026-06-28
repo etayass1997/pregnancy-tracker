@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}ספירת בעיטות — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">💓 ספירת בעיטות</h1>
+    <p class="page-subtitle">10 תנועות ב-2 שעות = תינוק בריא ופעיל 💕</p>
+</div>
+
+<div class="kicks-layout">
+    <div class="kick-main-card">
+        <div class="kick-count-display" id="kickCount">0</div>
+        <div class="kick-count-label">בעיטות היום</div>
+        <button class="kick-btn" id="kickBtn" onclick="recordKick()" title="לחצי בכל פעם שהתינוק זז">💓</button>
+        <button class="kick-reset-btn" onclick="resetKicks()">אפס ספירה</button>
+        <div class="kick-tip-box" id="kickTip">💓 לחצי על הלב בכל פעם שהתינוק מתנועע</div>
+    </div>
+
+    <div class="kicks-chart-card">
+        <h3>📊 7 הימים האחרונים</h3>
+        <div class="kick-bars" id="kickBars">
+            <div style="color:var(--text-muted); font-size:14px; align-self:center; margin: 0 auto;">טוענת נתונים...</div>
+        </div>
+        <div class="kick-info-box">
+            💡 מומלץ לספור תנועות כל יום החל משבוע 28. אם פחות מ-10 תנועות ב-2 שעות — פני לרופא.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let kickWeekData = [];
+
+async function loadKicks() {
+    const r = await fetch('/api/kicks');
+    const d = await r.json();
+    document.getElementById('kickCount').textContent = d.today;
+    kickWeekData = d.days;
+    renderKickBars(d.days);
+    updateKickTip(d.today);
+}
+
+function updateKickTip(count) {
+    const el = document.getElementById('kickTip');
+    if (count === 0)       el.textContent = '💓 לחצי על הלב בכל פעם שהתינוק מתנועע';
+    else if (count < 5)    el.textContent = `${count} בעיטות... ממשיכה לספור 💕`;
+    else if (count < 10)   el.textContent = `${count} בעיטות! עוד קצת ל-10 🌸`;
+    else                   el.textContent = `🎉 ${count} בעיטות — התינוק פעיל ובריא!`;
+}
+
+async function recordKick() {
+    const btn = document.getElementById('kickBtn');
+    btn.classList.remove('kick-pulse');
+    void btn.offsetWidth;
+    btn.classList.add('kick-pulse');
+
+    const r = await fetch('/api/kicks', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: '{}'
+    });
+    const d = await r.json();
+    document.getElementById('kickCount').textContent = d.count;
+    updateKickTip(d.count);
+    if (kickWeekData.length > 0) {
+        kickWeekData[kickWeekData.length - 1].count = d.count;
+        renderKickBars(kickWeekData);
+    }
+}
+
+async function resetKicks() {
+    if (!confirm('לאפס את ספירת היום לאפס?')) return;
+    const r = await fetch('/api/kicks/reset', {method: 'POST', headers: {'Content-Type':'application/json'}, body:'{}'});
+    const d = await r.json();
+    document.getElementById('kickCount').textContent = 0;
+    updateKickTip(0);
+    if (kickWeekData.length > 0) {
+        kickWeekData[kickWeekData.length - 1].count = 0;
+        renderKickBars(kickWeekData);
+    }
+}
+
+function renderKickBars(days) {
+    const maxKicks = Math.max(...days.map(d => d.count), 1);
+    const hebrewDays = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('kickBars').innerHTML = days.map(d => {
+        const dt = new Date(d.date + 'T12:00:00');
+        const label = hebrewDays[dt.getDay()];
+        const heightPct = Math.round(d.count / maxKicks * 100);
+        const isToday = d.date === today;
+        return `<div class="kick-bar-wrap">
+            <div class="kick-bar-val">${d.count || ''}</div>
+            <div class="kick-bar-outer" style="height:120px;">
+                <div class="kick-bar-fill" style="height:${heightPct}%; ${isToday ? 'background:linear-gradient(180deg,#F48FB1,#D4739A)' : ''}"></div>
+            </div>
+            <div class="kick-bar-day" style="${isToday ? 'color:var(--pink);font-weight:700' : ''}">${label}</div>
+        </div>`;
+    }).join('');
+}
+
+loadKicks();
+</script>
+{% endblock %}
