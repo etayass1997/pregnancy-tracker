@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bgG" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FDE8F4"/>
+      <stop offset="100%" stop-color="#F5D0E8"/>
+    </radialGradient>
+    <radialGradient id="skinG" cx="40%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FDDCB8"/>
+      <stop offset="100%" stop-color="#F5B888"/>
+    </radialGradient>
+    <radialGradient id="bumpG" cx="40%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#FDE8F4"/>
+      <stop offset="100%" stop-color="#F8C8DF"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="100" fill="url(#bgG)"/>
+  <circle cx="100" cy="100" r="97" fill="none" stroke="#E8A0C8" stroke-width="2" opacity="0.5"/>
+
+  <!-- Hair back layer -->
+  <ellipse cx="100" cy="58" rx="33" ry="30" fill="#6B3E20"/>
+  <ellipse cx="69" cy="70" rx="13" ry="28" fill="#6B3E20"/>
+  <ellipse cx="131" cy="70" rx="13" ry="28" fill="#6B3E20"/>
+  <ellipse cx="66" cy="94" rx="10" ry="14" fill="#6B3E20"/>
+  <ellipse cx="134" cy="94" rx="10" ry="14" fill="#6B3E20"/>
+  <!-- Hair curl ends -->
+  <ellipse cx="64" cy="106" rx="8" ry="10" fill="#6B3E20"/>
+  <ellipse cx="136" cy="106" rx="8" ry="10" fill="#6B3E20"/>
+
+  <!-- Neck -->
+  <rect x="88" y="90" width="24" height="20" rx="7" fill="url(#skinG)"/>
+
+  <!-- Head -->
+  <ellipse cx="100" cy="72" rx="31" ry="33" fill="url(#skinG)"/>
+
+  <!-- Hair front -->
+  <path d="M69 58 Q100 44 131 58 Q124 68 100 64 Q76 68 69 58Z" fill="#6B3E20"/>
+  <!-- Hair highlight shimmer -->
+  <path d="M82 47 Q100 42 118 47" stroke="#8B5A30" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.55"/>
+
+  <!-- Ear left -->
+  <ellipse cx="70" cy="77" rx="6" ry="8" fill="#F5B888"/>
+  <!-- Ear right -->
+  <ellipse cx="130" cy="77" rx="6" ry="8" fill="#F5B888"/>
+
+  <!-- Eye whites -->
+  <ellipse cx="87" cy="71" rx="8" ry="9" fill="white"/>
+  <ellipse cx="113" cy="71" rx="8" ry="9" fill="white"/>
+  <!-- Irises -->
+  <circle cx="87" cy="72" r="6" fill="#3D2210"/>
+  <circle cx="113" cy="72" r="6" fill="#3D2210"/>
+  <!-- Pupils -->
+  <circle cx="87" cy="72" r="3.8" fill="#1A0A05"/>
+  <circle cx="113" cy="72" r="3.8" fill="#1A0A05"/>
+  <!-- Eye shine -->
+  <circle cx="89" cy="70" r="2" fill="white"/>
+  <circle cx="115" cy="70" r="2" fill="white"/>
+  <!-- Lashes top -->
+  <path d="M79 63 Q87 59 95 62" stroke="#3D2210" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M105 62 Q113 59 121 63" stroke="#3D2210" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Eyebrows -->
+  <path d="M79 60 Q87 56 95 58" stroke="#5C3010" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  <path d="M105 58 Q113 56 121 60" stroke="#5C3010" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+
+  <!-- Nose -->
+  <ellipse cx="95" cy="82" rx="3" ry="2.2" fill="#E0A078" opacity="0.7"/>
+  <ellipse cx="105" cy="82" rx="3" ry="2.2" fill="#E0A078" opacity="0.7"/>
+  <path d="M95 83 Q100 87 105 83" stroke="#D4907A" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Smile -->
+  <path d="M85 93 Q100 104 115 93" stroke="#C06060" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  <!-- Lip fill suggestion -->
+  <path d="M85 93 Q100 100 115 93" stroke="#E07878" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- Blush -->
+  <ellipse cx="77" cy="87" rx="11" ry="7" fill="#FFB3C8" opacity="0.42"/>
+  <ellipse cx="123" cy="87" rx="11" ry="7" fill="#FFB3C8" opacity="0.42"/>
+
+  <!-- Dress / body -->
+  <path d="M42 114 Q66 104 100 107 Q134 104 158 114 L154 200 Q100 210 46 200 Z" fill="#E87AAE"/>
+  <!-- Dress collar/yoke -->
+  <path d="M42 114 Q66 104 100 107 Q134 104 158 114 L156 126 Q100 117 44 126 Z" fill="#D4689A"/>
+  <!-- Dress ruffle detail -->
+  <path d="M46 124 Q100 132 154 124" stroke="#C05888" stroke-width="1.5" fill="none" opacity="0.6"/>
+
+  <!-- Baby bump -->
+  <ellipse cx="101" cy="162" rx="50" ry="46" fill="url(#bumpG)"/>
+  <!-- Bump highlight -->
+  <ellipse cx="92" cy="148" rx="20" ry="16" fill="white" opacity="0.2"/>
+  <!-- Bump outline -->
+  <ellipse cx="101" cy="162" rx="50" ry="46" fill="none" stroke="#F0A0C8" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- Left arm -->
+  <path d="M44 118 Q30 142 28 166" stroke="#F5B888" stroke-width="20" stroke-linecap="round" fill="none"/>
+  <!-- Right arm -->
+  <path d="M156 118 Q170 142 172 166" stroke="#F5B888" stroke-width="20" stroke-linecap="round" fill="none"/>
+  <!-- Left hand on bump -->
+  <ellipse cx="30" cy="170" rx="16" ry="12" fill="#F5B888" transform="rotate(-25,30,170)"/>
+  <!-- Right hand on bump -->
+  <ellipse cx="170" cy="170" rx="16" ry="12" fill="#F5B888" transform="rotate(25,170,170)"/>
+
+  <!-- Heart on bump -->
+  <path d="M94 158 C94 153 87 152 87 157 C87 162 94 168 101 174 C108 168 115 162 115 157 C115 152 108 153 108 158 C107 155 95 155 94 158Z" fill="#D4699E" opacity="0.55"/>
+
+  <!-- Sparkles -->
+  <circle cx="22" cy="48" r="3" fill="#F48FB1" opacity="0.7"/>
+  <circle cx="22" cy="44" r="1.5" fill="#F48FB1" opacity="0.5"/>
+  <circle cx="26" cy="44" r="1.5" fill="#F48FB1" opacity="0.5"/>
+  <circle cx="178" cy="62" r="3" fill="#C4B0E8" opacity="0.7"/>
+  <circle cx="178" cy="58" r="1.5" fill="#C4B0E8" opacity="0.5"/>
+  <circle cx="182" cy="58" r="1.5" fill="#C4B0E8" opacity="0.5"/>
+  <circle cx="162" cy="30" r="2.5" fill="#F48FB1" opacity="0.5"/>
+  <circle cx="38" cy="32" r="2" fill="#C4B0E8" opacity="0.5"/>
+</svg>

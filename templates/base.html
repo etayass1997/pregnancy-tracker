@@ -14,13 +14,21 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-{% if session.get('username') %}
+{% if user is defined and user %}
 <nav class="sidebar">
     <div class="sidebar-logo">
         <div class="logo-icon">💕</div>
         <div class="logo-text">בטן מלאה</div>
     </div>
-    <div class="user-greeting">שלום, {{ user.display_name }}!</div>
+
+    <!-- Pua mini presence in sidebar -->
+    <div class="sidebar-pua" onclick="toggleChat()">
+        <img src="/static/pua-avatar.svg" class="sidebar-pua-img" alt="פועה">
+        <div class="sidebar-pua-info">
+            <div class="sidebar-pua-name">פועה</div>
+            <div class="sidebar-pua-sub">שאלי אותי כל דבר 💬</div>
+        </div>
+    </div>
 
     <ul class="nav-links">
         <li>
@@ -53,39 +61,62 @@
                 <span class="nav-icon">👶</span> שמות
             </a>
         </li>
+        <li>
+            <a href="{{ url_for('kicks') }}" class="nav-link {% if request.endpoint == 'kicks' %}active{% endif %}">
+                <span class="nav-icon">💓</span> בעיטות
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('mood') }}" class="nav-link {% if request.endpoint == 'mood' %}active{% endif %}">
+                <span class="nav-icon">💜</span> מצב רוח
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('checklist') }}" class="nav-link {% if request.endpoint == 'checklist' %}active{% endif %}">
+                <span class="nav-icon">📋</span> צ'קליסט
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('measurements') }}" class="nav-link {% if request.endpoint == 'measurements' %}active{% endif %}">
+                <span class="nav-icon">📏</span> מד הבטן
+            </a>
+        </li>
     </ul>
 
     <div class="sidebar-footer">
-        <form method="POST" action="{{ url_for('logout') }}">
-            <button type="submit" class="logout-btn">התנתקות</button>
-        </form>
+        <a href="{{ url_for('setup') }}" class="settings-link">⚙️ עדכון פרטים</a>
     </div>
 </nav>
 {% endif %}
 
-<main class="{% if session.get('username') %}with-sidebar{% endif %}">
+<main class="{% if user is defined and user %}with-sidebar{% endif %}">
     {% block content %}{% endblock %}
 </main>
 
-{% if session.get('username') %}
-<!-- Lotus Chat Widget -->
-<button class="chat-fab" onclick="toggleChat()" id="chatFab" title="שוחחי עם הריונית">
-    <span class="chat-fab-figure">🤰</span>
-    <span class="chat-fab-label">שאלי אותי</span>
+{% if user is defined and user %}
+<!-- Pua Chat Widget -->
+<button class="chat-fab" onclick="toggleChat()" id="chatFab" title="שוחח עם פועה">
+    <img src="/static/pua-avatar.svg" class="chat-fab-avatar" alt="פועה">
+    <span class="chat-fab-pulse"></span>
 </button>
+
 <div class="chat-panel" id="chatPanel">
     <div class="chat-header">
-        <div class="chat-header-info">
-            <span class="chat-agent-name">הריונית 🌸</span>
-            <span class="chat-agent-sub">הסוכנת האישית שלי</span>
+        <div class="chat-header-avatar-wrap">
+            <img src="/static/pua-avatar.svg" class="chat-header-avatar" alt="פועה">
+            <span class="chat-online-dot"></span>
         </div>
-        <button class="chat-close" onclick="toggleChat()">✕</button>
+        <div class="chat-header-info">
+            <span class="chat-agent-name">פועה 🤰</span>
+            <span class="chat-agent-sub">שבוע 35 — כאן בשבילך!</span>
+        </div>
+        <div class="chat-header-actions">
+            <button class="chat-clear-btn" onclick="clearChat()" title="נקי שיחה">🗑️</button>
+            <button class="chat-close" onclick="toggleChat()">✕</button>
+        </div>
     </div>
     <div class="chat-messages" id="chatMessages">
-        <div class="message agent">
-            שלום {{ user.display_name }}! 🌸<br>
-            אני הריונית, הסוכנת האישית שלך. אני כאן לכל שאלה על ההריון, על ההתפתחות, על הגוף שלך — או סתם לשוחח. מה על ליבך?
-        </div>
+        <!-- Messages populated by JS from localStorage or default greeting -->
     </div>
     <div class="chat-input-area">
         <input type="text" id="chatInput" placeholder="שאלי אותי משהו..." onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage();}">

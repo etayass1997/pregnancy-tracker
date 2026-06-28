@@ -1,17 +1,76 @@
 // ─── Chat Widget ───────────────────────────────────────────────────────────
 
-const chatHistory = [];
+const CHAT_STORAGE_KEY = 'pt_chat_history';
+const CHAT_MAX_STORED = 40; // max messages to persist
+
+let chatHistory = [];
+
+function _saveChatToStorage() {
+    const toSave = chatHistory.slice(-CHAT_MAX_STORED);
+    try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toSave)); } catch {}
+}
+
+function _loadChatFromStorage() {
+    try {
+        const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+        return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+}
+
+function initChat() {
+    const msgs = document.getElementById('chatMessages');
+    if (!msgs) return;
+
+    const saved = _loadChatFromStorage();
+    if (saved.length > 0) {
+        chatHistory = saved;
+        // Restore DOM messages
+        saved.forEach(m => {
+            const role = m.role === 'user' ? 'user' : 'agent';
+            const div = document.createElement('div');
+            div.className = 'message ' + role;
+            div.innerHTML = m.content.replace(/\n/g, '<br>');
+            msgs.appendChild(div);
+        });
+    } else {
+        // Default greeting from Pua
+        const greetDiv = document.createElement('div');
+        greetDiv.className = 'message agent pua-greeting';
+        greetDiv.innerHTML = `<div class="pua-msg-avatar"><img src="/static/pua-avatar.svg" alt="פועה"></div>
+            <div class="pua-msg-text">היי! אני פועה 🤰<br>בשבוע 35 בעצמי — אז אני ממש מבינה אותך!<br>שאלי אותי כל מה שעל הלב 💕</div>`;
+        msgs.appendChild(greetDiv);
+    }
+    scrollChatToBottom();
+}
 
 function toggleChat() {
     const panel = document.getElementById('chatPanel');
     const fab = document.getElementById('chatFab');
     if (!panel) return;
     panel.classList.toggle('open');
-    fab.style.transform = panel.classList.contains('open') ? 'scale(0.9)' : '';
     if (panel.classList.contains('open')) {
+        fab.classList.add('open');
         document.getElementById('chatInput').focus();
         scrollChatToBottom();
+    } else {
+        fab.classList.remove('open');
     }
+}
+
+function clearChat() {
+    if (!confirm('לנקות את השיחה עם פועה?')) return;
+    chatHistory = [];
+    try { localStorage.removeItem(CHAT_STORAGE_KEY); } catch {}
+    const msgs = document.getElementById('chatMessages');
+    if (msgs) {
+        msgs.innerHTML = '';
+        const greetDiv = document.createElement('div');
+        greetDiv.className = 'message agent pua-greeting';
+        greetDiv.innerHTML = `<div class="pua-msg-avatar"><img src="/static/pua-avatar.svg" alt="פועה"></div>
+            <div class="pua-msg-text">היי! אני פועה 🤰<br>בשבוע 35 בעצמי — אז אני ממש מבינה אותך!<br>שאלי אותי כל מה שעל הלב 💕</div>`;
+        msgs.appendChild(greetDiv);
+    }
+    scrollChatToBottom();
 }
 
 function scrollChatToBottom() {
@@ -23,7 +82,11 @@ function appendMessage(role, text) {
     const msgs = document.getElementById('chatMessages');
     const div = document.createElement('div');
     div.className = 'message ' + role;
-    div.innerHTML = text.replace(/\n/g, '<br>');
+    if (role === 'agent') {
+        div.innerHTML = `<div class="pua-msg-avatar"><img src="/static/pua-avatar.svg" alt="פועה"></div><div class="pua-msg-text">${text.replace(/\n/g, '<br>')}</div>`;
+    } else {
+        div.innerHTML = text.replace(/\n/g, '<br>');
+    }
     msgs.appendChild(div);
     scrollChatToBottom();
     return div;
@@ -42,7 +105,11 @@ async function sendMessage() {
     appendMessage('user', text);
     chatHistory.push({ role: 'user', content: text });
 
-    const loading = appendMessage('loading', 'הריונית מקלידה...');
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'message loading pua-loading';
+    loadingDiv.innerHTML = `<div class="pua-msg-avatar"><img src="/static/pua-avatar.svg" alt="פועה"></div><div class="pua-typing"><span></span><span></span><span></span></div>`;
+    document.getElementById('chatMessages').appendChild(loadingDiv);
+    scrollChatToBottom();
 
     try {
         const res = await fetch('/api/chat', {
@@ -51,17 +118,18 @@ async function sendMessage() {
             body: JSON.stringify({ messages: chatHistory })
         });
         const data = await res.json();
-        loading.remove();
+        loadingDiv.remove();
 
         if (data.reply) {
             chatHistory.push({ role: 'assistant', content: data.reply });
+            _saveChatToStorage();
             appendMessage('agent', data.reply);
         } else {
-            appendMessage('agent', 'מצטערת, משהו השתבש. נסי שוב.');
+            appendMessage('agent', 'מצטערת, משהו השתבש. נסי שוב 🙏');
         }
     } catch {
-        loading.remove();
-        appendMessage('agent', 'בעיית תקשורת. נסי שוב בעוד רגע.');
+        loadingDiv.remove();
+        appendMessage('agent', 'בעיית תקשורת. נסי שוב בעוד רגע 💕');
     }
 
     input.disabled = false;
@@ -400,9 +468,109 @@ function filterNames(filter, tabEl) {
     });
 }
 
+// ─── Fruit Image (Wikipedia) ───────────────────────────────────────────────
+
+const FRUIT_WIKI_TITLES = {
+    1:'Poppy_seed', 2:'Sesame', 3:'Strawberry', 4:'Poppy_seed',
+    5:'Sesame', 6:'Lentil', 7:'Blueberry', 8:'Raspberry',
+    9:'Grape', 10:'Plum', 11:'Fig', 12:'Lime_(fruit)',
+    13:'Cherry_tomato', 14:'Lemon', 15:'Apple', 16:'Avocado',
+    17:'Pear', 18:'Bell_pepper', 19:'Mango', 20:'Banana',
+    21:'Carrot', 22:'Cucumber', 23:'Grapefruit', 24:'Maize',
+    25:'Daikon', 26:'Cauliflower', 27:'Cauliflower', 28:'Eggplant',
+    29:'Pumpkin', 30:'Cabbage', 31:'Coconut', 32:'Pumpkin',
+    33:'Pineapple', 34:'Zucchini', 35:'Watermelon', 36:'Papaya',
+    37:'Cabbage', 38:'Leek', 39:'Watermelon', 40:'Watermelon'
+};
+
+async function loadFruitImage(weekNum) {
+    const title = FRUIT_WIKI_TITLES[weekNum];
+    if (!title) return;
+    const cacheKey = 'fwiki_' + weekNum;
+    let src = sessionStorage.getItem(cacheKey);
+    if (!src) {
+        try {
+            const r = await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(title));
+            const d = await r.json();
+            src = d.thumbnail?.source?.replace('/320px-', '/400px-') || '';
+            if (src) sessionStorage.setItem(cacheKey, src);
+        } catch { return; }
+    }
+    if (!src) return;
+    const img = document.getElementById('fruitImg');
+    if (!img) return;
+    img.onload = () => {
+        img.style.display = 'block';
+        const em = document.getElementById('fruitEmoji');
+        if (em) em.style.display = 'none';
+    };
+    img.onerror = () => {};
+    img.src = src;
+}
+
+// ─── Belly Chart ───────────────────────────────────────────────────────────
+
+function renderBellyChart(measurements) {
+    const svg = document.getElementById('bellySvg');
+    if (!svg) return;
+    if (!measurements || measurements.length === 0) {
+        svg.innerHTML = '<text x="50%" y="100" text-anchor="middle" fill="#8A6A8A" font-size="14" font-family="Heebo">אין נתונים עדיין — הוסיפי מדידה ראשונה 💕</text>';
+        svg.setAttribute('height', '140');
+        return;
+    }
+
+    const W = svg.parentElement.clientWidth || 600;
+    const H = 220;
+    svg.setAttribute('height', H);
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+    const pad = { top: 24, right: 24, bottom: 44, left: 52 };
+    const cW = W - pad.left - pad.right;
+    const cH = H - pad.top - pad.bottom;
+
+    const weeks = measurements.map(m => m.week);
+    const cms = measurements.map(m => m.cm);
+    const minW = Math.min(...weeks); const maxW = Math.max(...weeks, minW + 1);
+    const minC = Math.min(...cms) - 4;  const maxC = Math.max(...cms) + 4;
+
+    const xS = w => pad.left + (w - minW) / (maxW - minW || 1) * cW;
+    const yS = c => pad.top + cH - (c - minC) / (maxC - minC || 1) * cH;
+
+    let out = `<defs><linearGradient id="bellyGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#D4739A" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="#D4739A" stop-opacity="0"/>
+    </linearGradient></defs>`;
+
+    // grid
+    const gridStep = cH > 120 ? 5 : 10;
+    for (let c = Math.ceil(minC / gridStep) * gridStep; c <= maxC; c += gridStep) {
+        const y = yS(c);
+        out += `<line x1="${pad.left}" y1="${y}" x2="${pad.left + cW}" y2="${y}" stroke="#F0D8E8" stroke-width="1"/>`;
+        out += `<text x="${pad.left - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="#8A6A8A" font-family="Heebo">${c}</text>`;
+    }
+    // x axis
+    out += `<line x1="${pad.left}" y1="${pad.top + cH}" x2="${pad.left + cW}" y2="${pad.top + cH}" stroke="#F0D8E8" stroke-width="1"/>`;
+
+    const pts = measurements.map(m => `${xS(m.week)},${yS(m.cm)}`).join(' ');
+    const m0 = measurements[0]; const mN = measurements[measurements.length - 1];
+    out += `<polygon points="${xS(m0.week)},${pad.top + cH} ${pts} ${xS(mN.week)},${pad.top + cH}" fill="url(#bellyGrad)"/>`;
+    out += `<polyline points="${pts}" fill="none" stroke="#D4739A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+    measurements.forEach(m => {
+        const x = xS(m.week); const y = yS(m.cm);
+        out += `<circle cx="${x}" cy="${y}" r="5" fill="#D4739A" stroke="white" stroke-width="2.5"/>`;
+        out += `<text x="${x}" y="${y - 10}" text-anchor="middle" font-size="11" fill="#D4739A" font-weight="700" font-family="Heebo">${m.cm}</text>`;
+        out += `<text x="${x}" y="${H - 8}" text-anchor="middle" font-size="11" fill="#8A6A8A" font-family="Heebo">ש${m.week}</text>`;
+    });
+
+    out += `<text x="14" y="${pad.top + cH / 2}" text-anchor="middle" transform="rotate(-90,14,${pad.top + cH / 2})" font-size="11" fill="#8A6A8A" font-family="Heebo">ס"מ</text>`;
+    svg.innerHTML = out;
+}
+
 // ─── Init ──────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', function () {
+    initChat();
     bindUploadAreaClick();
 
     const modalHandlers = [
