@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, make_response
+from flask import Flask, render_template, request, redirect, url_for, jsonify, make_response, send_from_directory
 import anthropic
 import json
 import os
@@ -1039,6 +1039,15 @@ def save_vitamins():
     vits[key] = not vits.get(key, False)
     save_user(device_id, user)
     return jsonify({'checked': vits[key]})
+
+
+@app.route('/sw.js')
+def service_worker():
+    response = make_response(send_from_directory('static', 'sw.js'))
+    response.headers['Content-Type'] = 'application/javascript'
+    response.headers['Service-Worker-Allowed'] = '/'
+    response.headers['Cache-Control'] = 'no-cache'
+    return response
 
 
 if __name__ == '__main__':
