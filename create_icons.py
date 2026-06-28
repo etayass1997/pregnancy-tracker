@@ -1,62 +1,68 @@
-"""Generate PWA PNG icons using only Python stdlib — no Pillow needed."""
-import struct
-import zlib
-import os
-import math
+"""Generate PWA PNG icons for בטן מלאה pregnancy tracker."""
+import struct, zlib, os, math
 
 
-def make_png(size, bg_r, bg_g, bg_b, fg_r, fg_g, fg_b):
-    """Create a PNG with a pink rounded-rect background and a white heart."""
-    def chunk(t, d):
-        c = t + d
-        return struct.pack('>I', len(d)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+def lerp(a, b, t):
+    return max(0, min(255, int(a + (b - a) * t)))
 
-    # Pre-compute: rounded rectangle inside the square
-    corner_radius = size // 5
-    pad = size // 16
+
+def make_png(size):
+    S = size
+
+    # Background: warm rose top → deep rose bottom
+    top = (255, 143, 177)   # #FF8FB1
+    bot = (176, 10, 82)     # #B00A52
+
+    # Outer belly heart (tip at top, lobes at bottom — the womb shape)
+    # Heart vertical extent: top at hcy - 0.85*hs, lobe-bottom at hcy + 1.66*hs
+    hcx, hcy = S * 0.50, S * 0.46
+    hsx = S * 0.27   # horizontal scale
+    hsy = S * 0.22   # vertical scale (compressed so lobes stay in frame)
+
+    # Inner baby heart (lobes at top, tip at bottom — conventional heart)
+    bhcx, bhcy = S * 0.50, S * 0.60
+    bhs = S * 0.10
+
     rows = bytearray()
+    for y in range(S):
+        rows.append(0)
+        t = y / (S - 1)
+        bg = (lerp(top[0], bot[0], t), lerp(top[1], bot[1], t), lerp(top[2], bot[2], t))
 
-    for y in range(size):
-        rows.append(0)  # filter None
-        for x in range(size):
-            # Rounded rectangle test
-            ax = abs(x - size / 2) - (size / 2 - pad - corner_radius)
-            ay = abs(y - size / 2) - (size / 2 - pad - corner_radius)
-            dx = max(ax, 0)
-            dy = max(ay, 0)
-            in_rect = (dx * dx + dy * dy) <= corner_radius * corner_radius
+        for x in range(S):
+            # Belly heart: upside-down heart (tip at top in image coords)
+            nx = (x - hcx) / hsx
+            ny = (y - hcy) / hsy
+            in_belly = (nx*nx + ((ny - 0.15) - abs(nx)**(2.0/3.0))**2) <= 1.0
 
-            if in_rect:
-                # Heart shape in the center third
-                nx = (x - size / 2) / (size / 4)
-                ny = (y - size / 2) / (size / 4)
-                ny -= 0.15  # shift slightly upward
-                heart = (nx * nx + (ny - abs(nx) ** (2 / 3)) ** 2) <= 1.0
-                if heart:
-                    rows.extend([255, 255, 255])
+            # Baby heart: conventional heart (lobes at top, tip at bottom in image coords)
+            bnx = (x - bhcx) / bhs
+            bny = (y - bhcy) / bhs
+            in_baby = (bnx*bnx + (bny + abs(bnx)**(2.0/3.0))**2) <= 1.0
+
+            if in_belly:
+                if in_baby:
+                    rows.extend([255, 100, 155])  # rose pink baby heart
                 else:
-                    rows.extend([fg_r, fg_g, fg_b])
+                    rows.extend([255, 255, 255])  # white belly
             else:
-                rows.extend([bg_r, bg_g, bg_b])
+                rows.extend(bg)
 
-    sig = b'\x89PNG\r\n\x1a\n'
-    ihdr = chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 2, 0, 0, 0))
-    idat = chunk(b'IDAT', zlib.compress(bytes(rows), 6))
-    iend = chunk(b'IEND', b'')
-    return sig + ihdr + idat + iend
+    def chunk(tag, data):
+        c = tag + data
+        return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+
+    return (b'\x89PNG\r\n\x1a\n' +
+            chunk(b'IHDR', struct.pack('>IIBBBBB', S, S, 8, 2, 0, 0, 0)) +
+            chunk(b'IDAT', zlib.compress(bytes(rows), 6)) +
+            chunk(b'IEND', b''))
 
 
 if __name__ == '__main__':
     static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
     os.makedirs(static_dir, exist_ok=True)
-
-    # White background, pink (#F48FB1) rounded rect, white heart
-    bg = (255, 255, 255)
-    fg = (244, 143, 177)   # #F48FB1
-
     for size in [192, 512]:
         path = os.path.join(static_dir, f'icon-{size}.png')
-        data = make_png(size, *bg, *fg)
         with open(path, 'wb') as f:
-            f.write(data)
-        print(f'Created {path} ({len(data)} bytes)')
+            f.write(make_png(size))
+        print(f'Created {path}')

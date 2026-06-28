@@ -51,7 +51,13 @@
 
 <!-- Week Hero Card -->
 <div class="week-hero">
-    <div class="week-emoji-big">{{ week_data.emoji }}</div>
+    <div class="fruit-hero-img-wrap">
+        <div class="fruit-img-circle">
+            <span id="fruitEmoji" class="fruit-hero-emoji">{{ week_data.emoji }}</span>
+            <img id="fruitImg" class="fruit-real-img" alt="{{ week_data.size }}">
+        </div>
+        <div class="fruit-img-caption">בגודל של {{ week_data.size }}</div>
+    </div>
     <div class="week-hero-content">
         <div class="week-hero-title">שבוע {{ current_week }} — {{ week_data.size }}</div>
         <div class="week-measurements">
@@ -74,6 +80,8 @@
         </a>
     </div>
 </div>
+{% block scripts %}{% endblock %}
+<script>loadFruitImage({{ current_week }});</script>
 
 <!-- Info Cards Grid -->
 <div class="info-grid">

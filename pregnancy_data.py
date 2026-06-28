@@ -1,3 +1,16 @@
+WEEK_FRUIT_WIKI = {
+    1:'Poppy_seed', 2:'Sesame', 3:'Strawberry', 4:'Poppy_seed',
+    5:'Sesame', 6:'Lentil', 7:'Blueberry', 8:'Raspberry',
+    9:'Grape', 10:'Plum', 11:'Fig', 12:'Lime_(fruit)',
+    13:'Cherry_tomato', 14:'Lemon', 15:'Apple', 16:'Avocado',
+    17:'Pear', 18:'Bell_pepper', 19:'Mango', 20:'Banana',
+    21:'Carrot', 22:'Cucumber', 23:'Grapefruit', 24:'Maize',
+    25:'Daikon', 26:'Cauliflower', 27:'Cauliflower', 28:'Eggplant',
+    29:'Pumpkin', 30:'Cabbage', 31:'Coconut', 32:'Pumpkin',
+    33:'Pineapple', 34:'Zucchini', 35:'Watermelon', 36:'Papaya',
+    37:'Cabbage', 38:'Leek', 39:'Watermelon', 40:'Watermelon',
+}
+
 PREGNANCY_WEEKS = {
     1: {
         "emoji": "🌸", "size": "גרגר פרג", "length": "~0.1 מ\"מ", "weight": "פחות מגרם",

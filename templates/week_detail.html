@@ -20,7 +20,13 @@
 
 <!-- Hero -->
 <div class="week-detail-hero">
-    <div class="week-big-emoji">{{ week_data.emoji }}</div>
+    <div class="fruit-hero-img-wrap">
+        <div class="fruit-img-circle">
+            <span id="fruitEmoji" class="fruit-hero-emoji">{{ week_data.emoji }}</span>
+            <img id="fruitImg" class="fruit-real-img" alt="{{ week_data.size }}">
+        </div>
+        <div class="fruit-img-caption">בגודל של {{ week_data.size }}</div>
+    </div>
     <div>
         <h2 class="week-detail-title">הגודל של {{ week_data.size }}</h2>
         <div class="week-measurements">
@@ -91,4 +97,8 @@
     <span></span>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>loadFruitImage({{ week_num }});</script>
 {% endblock %}
