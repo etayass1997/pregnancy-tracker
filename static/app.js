@@ -36,8 +36,8 @@ function initChat() {
         // Default greeting from Pua
         const greetDiv = document.createElement('div');
         greetDiv.className = 'message agent pua-greeting';
-        greetDiv.innerHTML = `<div class="pua-msg-avatar"><img src="/static/pua-avatar.svg" alt="פועה"></div>
-            <div class="pua-msg-text">היי! אני פועה 🤰<br>בשבוע 35 בעצמי — אז אני ממש מבינה אותך!<br>שאלי אותי כל מה שעל הלב 💕</div>`;
+        greetDiv.innerHTML = `<div class="pua-msg-avatar"><img src="/static/pua-avatar.svg" alt="רחלי"></div>
+            <div class="pua-msg-text">היי! אני רחלי 🌸<br>מלווה הריון ואני כאן בשבילך!<br>שאלי אותי כל מה שעל הלב 💕</div>`;
         msgs.appendChild(greetDiv);
     }
     scrollChatToBottom();
@@ -58,7 +58,7 @@ function toggleChat() {
 }
 
 function clearChat() {
-    if (!confirm('לנקות את השיחה עם פועה?')) return;
+    if (!confirm('לנקות את השיחה עם רחלי?')) return;
     chatHistory = [];
     try { localStorage.removeItem(CHAT_STORAGE_KEY); } catch {}
     const msgs = document.getElementById('chatMessages');
@@ -66,8 +66,8 @@ function clearChat() {
         msgs.innerHTML = '';
         const greetDiv = document.createElement('div');
         greetDiv.className = 'message agent pua-greeting';
-        greetDiv.innerHTML = `<div class="pua-msg-avatar"><img src="/static/pua-avatar.svg" alt="פועה"></div>
-            <div class="pua-msg-text">היי! אני פועה 🤰<br>בשבוע 35 בעצמי — אז אני ממש מבינה אותך!<br>שאלי אותי כל מה שעל הלב 💕</div>`;
+        greetDiv.innerHTML = `<div class="pua-msg-avatar"><img src="/static/pua-avatar.svg" alt="רחלי"></div>
+            <div class="pua-msg-text">היי! אני רחלי 🌸<br>מלווה הריון ואני כאן בשבילך!<br>שאלי אותי כל מה שעל הלב 💕</div>`;
         msgs.appendChild(greetDiv);
     }
     scrollChatToBottom();
@@ -83,7 +83,7 @@ function appendMessage(role, text) {
     const div = document.createElement('div');
     div.className = 'message ' + role;
     if (role === 'agent') {
-        div.innerHTML = `<div class="pua-msg-avatar"><img src="/static/pua-avatar.svg" alt="פועה"></div><div class="pua-msg-text">${text.replace(/\n/g, '<br>')}</div>`;
+        div.innerHTML = `<div class="pua-msg-avatar"><img src="/static/pua-avatar.svg" alt="רחלי"></div><div class="pua-msg-text">${text.replace(/\n/g, '<br>')}</div>`;
     } else {
         div.innerHTML = text.replace(/\n/g, '<br>');
     }
@@ -107,7 +107,7 @@ async function sendMessage() {
 
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'message loading pua-loading';
-    loadingDiv.innerHTML = `<div class="pua-msg-avatar"><img src="/static/pua-avatar.svg" alt="פועה"></div><div class="pua-typing"><span></span><span></span><span></span></div>`;
+    loadingDiv.innerHTML = `<div class="pua-msg-avatar"><img src="/static/pua-avatar.svg" alt="רחלי"></div><div class="pua-typing"><span></span><span></span><span></span></div>`;
     document.getElementById('chatMessages').appendChild(loadingDiv);
     scrollChatToBottom();
 
