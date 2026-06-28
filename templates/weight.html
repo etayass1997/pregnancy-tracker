@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}מעקב משקל — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">⚖️ מעקב משקל</h1>
+    <p class="page-subtitle">עקבי אחרי עליית המשקל שלך לאורך ההריון 🌸</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+    <div class="card" style="padding:28px;">
+        <h3 style="margin-bottom:20px; color:var(--pink);">הוסיפי מדידה</h3>
+        <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:14px; color:var(--text-muted); margin-bottom:6px;">שבוע הריון</label>
+            <input type="number" id="weightWeek" min="1" max="40" value="{{ current_week }}"
+                   style="width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:12px; font-family:Heebo,sans-serif; font-size:15px; background:var(--bg);">
+        </div>
+        <div style="margin-bottom:20px;">
+            <label style="display:block; font-size:14px; color:var(--text-muted); margin-bottom:6px;">משקל (ק"ג)</label>
+            <input type="number" id="weightKg" step="0.1" min="30" max="200" placeholder="למשל: 68.5"
+                   style="width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:12px; font-family:Heebo,sans-serif; font-size:15px; background:var(--bg);">
+        </div>
+        <button class="btn btn-primary" onclick="addWeight()" style="width:100%;">הוסיפי מדידה ⚖️</button>
+        <div id="weightMsg" style="margin-top:12px; font-size:14px; text-align:center; color:var(--pink);"></div>
+    </div>
+
+    <div class="card" style="padding:28px;">
+        <h3 style="margin-bottom:16px; color:var(--pink);">📊 גרף עלייה במשקל</h3>
+        {% if weights %}
+        <div style="position:relative; height:160px; display:flex; align-items:flex-end; gap:6px; border-bottom:2px solid var(--border); padding-bottom:8px;">
+            {% set max_kg = weights | map(attribute='kg') | max %}
+            {% set min_kg = weights | map(attribute='kg') | min %}
+            {% set range_kg = [max_kg - min_kg, 1] | max %}
+            {% for w in weights %}
+            {% set pct = ((w.kg - min_kg) / range_kg * 80 + 10) | int %}
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;">
+                <div style="font-size:10px; color:var(--text-muted);">{{ w.kg }}</div>
+                <div style="width:100%; height:{{ pct }}%; background:linear-gradient(180deg,var(--pink),var(--lavender)); border-radius:6px 6px 0 0; min-height:8px;"></div>
+                <div style="font-size:10px; color:var(--text-muted);">ש{{ w.week }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% if weights | length >= 2 %}
+        <div style="margin-top:14px; padding:12px; background:var(--pink-pale); border-radius:10px; font-size:13px; text-align:center; color:var(--text-muted);">
+            עלייה כוללת: <strong style="color:var(--pink);">{{ "%.1f"|format(weights[-1].kg - weights[0].kg) }} ק"ג</strong>
+            (שבוע {{ weights[0].week }} → שבוע {{ weights[-1].week }})
+        </div>
+        {% endif %}
+        {% else %}
+        <div style="text-align:center; padding:40px 20px; color:var(--text-muted);">
+            <div style="font-size:40px; margin-bottom:12px;">⚖️</div>
+            <div>אין עדיין מדידות — הוסיפי את הראשונה!</div>
+        </div>
+        {% endif %}
+        <div style="margin-top:12px; padding:10px 14px; background:#FFF3E0; border-radius:10px; font-size:12px; color:#8B6914; line-height:1.5;">
+            💡 עלייה מומלצת: 11–16 ק"ג (BMI תקין) לאורך ההריון כולו
+        </div>
+    </div>
+</div>
+
+{% if weights %}
+<div class="card" style="padding:28px; margin-top:24px;">
+    <h3 style="margin-bottom:16px; color:var(--pink);">📋 כל המדידות</h3>
+    <table style="width:100%; border-collapse:collapse;">
+        <thead>
+            <tr style="border-bottom:2px solid var(--border);">
+                <th style="text-align:right; padding:10px 14px; font-size:13px; color:var(--text-muted);">שבוע</th>
+                <th style="text-align:right; padding:10px 14px; font-size:13px; color:var(--text-muted);">משקל</th>
+                <th style="text-align:right; padding:10px 14px; font-size:13px; color:var(--text-muted);">תאריך</th>
+                <th style="padding:10px 14px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for w in weights | sort(attribute='week', reverse=True) %}
+            <tr style="border-bottom:1px solid var(--border);" id="wrow-{{ w.id }}">
+                <td style="padding:12px 14px; font-weight:600;">שבוע {{ w.week }}</td>
+                <td style="padding:12px 14px; color:var(--pink); font-weight:700;">{{ w.kg }} ק"ג</td>
+                <td style="padding:12px 14px; color:var(--text-muted); font-size:13px;">{{ w.date }}</td>
+                <td style="padding:12px 14px; text-align:left;">
+                    <button onclick="deleteWeight('{{ w.id }}')"
+                            style="background:none; border:none; cursor:pointer; color:var(--text-muted); font-size:18px;">🗑️</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function addWeight() {
+    const week = parseInt(document.getElementById('weightWeek').value);
+    const kg = parseFloat(document.getElementById('weightKg').value);
+    const msg = document.getElementById('weightMsg');
+    if (!kg || kg < 30 || kg > 200) { msg.textContent = 'הכניסי משקל תקין (30–200 ק"ג)'; return; }
+    if (!week || week < 1 || week > 40) { msg.textContent = 'הכניסי שבוע תקין (1–40)'; return; }
+    const r = await fetch('/api/weight', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({week, kg})
+    });
+    if (r.ok) { msg.textContent = '✓ נשמר!'; setTimeout(() => location.reload(), 800); }
+    else { const d = await r.json(); msg.textContent = d.error || 'שגיאה'; }
+}
+
+async function deleteWeight(id) {
+    if (!confirm('למחוק מדידה זו?')) return;
+    await fetch('/api/weight/' + id, {method: 'DELETE'});
+    document.getElementById('wrow-' + id).remove();
+}
+</script>
+{% endblock %}

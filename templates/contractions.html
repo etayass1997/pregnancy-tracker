@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}טיימר צירים — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">⏱️ טיימר צירים</h1>
+    <p class="page-subtitle">לחצי בתחילת כל ציר ובסופו — אנחנו נחשב את הכל 💕</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+    <div class="card" style="padding:36px; text-align:center;">
+        <div id="timerDisplay" style="font-size:64px; font-weight:800; color:var(--pink); font-variant-numeric:tabular-nums; letter-spacing:-2px; margin-bottom:8px;">00:00</div>
+        <div id="timerLabel" style="font-size:15px; color:var(--text-muted); margin-bottom:32px;">לחצי להתחיל ציר</div>
+
+        <button id="mainBtn" onclick="toggleContraction()"
+                style="width:160px; height:160px; border-radius:50%; border:none; cursor:pointer;
+                       background:linear-gradient(135deg,var(--pink),var(--lavender));
+                       color:white; font-size:18px; font-weight:700; font-family:Heebo,sans-serif;
+                       box-shadow:0 8px 32px rgba(212,115,154,0.4); transition:all 0.2s;
+                       display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+                       margin:0 auto 28px;">
+            <span style="font-size:36px;">⏱️</span>
+            <span id="btnLabel">התחלת ציר</span>
+        </button>
+
+        <div id="contractionSummary" style="display:none; padding:16px 20px; background:var(--pink-pale); border-radius:14px; font-size:14px; line-height:1.8;">
+        </div>
+
+        <button onclick="clearSession()"
+                style="margin-top:16px; background:none; border:1px solid var(--border); border-radius:10px;
+                       padding:8px 20px; cursor:pointer; font-family:Heebo,sans-serif; font-size:13px; color:var(--text-muted);">
+            נקה סשן 🗑️
+        </button>
+    </div>
+
+    <div class="card" style="padding:28px;">
+        <h3 style="margin-bottom:16px; color:var(--pink);">📊 צירים בסשן הנוכחי</h3>
+        <div id="contractionList" style="display:flex; flex-direction:column; gap:10px; max-height:420px; overflow-y:auto;">
+            <div style="text-align:center; padding:30px; color:var(--text-muted); font-size:14px;" id="emptyMsg">
+                <div style="font-size:36px; margin-bottom:8px;">⏱️</div>
+                לחצי על הכפתור להתחיל לסמן צירים
+            </div>
+        </div>
+
+        <div style="margin-top:16px; padding:14px 16px; background:#FFF3E0; border-radius:12px; font-size:13px; line-height:1.7; color:#8B6914;">
+            🚨 <strong>מתי ללכת לבית חולים?</strong><br>
+            כשהצירים <strong>קבועים כל 5 דקות</strong> למשך לפחות שעה,<br>
+            כל ציר נמשך <strong>60 שניות</strong> — לכי!
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let isActive = false;
+let currentId = null;
+let timerInterval = null;
+let startTime = null;
+let session = [];
+
+function fmt(sec) {
+    return String(Math.floor(sec / 60)).padStart(2,'0') + ':' + String(sec % 60).padStart(2,'0');
+}
+
+function fmtSec(sec) {
+    if (!sec && sec !== 0) return '—';
+    if (sec < 60) return sec + ' שנ\'';
+    return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2,'0') + ' דק\'';
+}
+
+async function toggleContraction() {
+    const btn = document.getElementById('mainBtn');
+    if (!isActive) {
+        // Start
+        const r = await fetch('/api/contractions', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'start'})
+        });
+        const d = await r.json();
+        currentId = d.id;
+        isActive = true;
+        startTime = Date.now();
+        btn.style.background = 'linear-gradient(135deg,#E53E3E,#C05621)';
+        document.getElementById('btnLabel').textContent = 'סיום ציר';
+        document.getElementById('timerLabel').textContent = 'ציר בעיצומו...';
+        timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('timerDisplay').textContent = fmt(elapsed);
+        }, 500);
+    } else {
+        // Stop
+        clearInterval(timerInterval);
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        await fetch('/api/contractions', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'stop', id: currentId})
+        });
+        isActive = false;
+        btn.style.background = 'linear-gradient(135deg,var(--pink),var(--lavender))';
+        document.getElementById('btnLabel').textContent = 'התחלת ציר';
+        document.getElementById('timerDisplay').textContent = '00:00';
+        document.getElementById('timerLabel').textContent = 'לחצי להתחיל ציר הבאה';
+        loadSession();
+    }
+}
+
+async function loadSession() {
+    const r = await fetch('/api/contractions');
+    const d = await r.json();
+    session = d.session || [];
+    renderSession();
+}
+
+function renderSession() {
+    const list = document.getElementById('contractionList');
+    const empty = document.getElementById('emptyMsg');
+    const done = session.filter(c => c.duration);
+    if (done.length === 0) { empty.style.display = 'block'; list.innerHTML = ''; list.appendChild(empty); return; }
+    empty.style.display = 'none';
+
+    list.innerHTML = done.slice().reverse().map((c, i) => {
+        const num = done.length - i;
+        return `<div style="padding:12px 16px; background:var(--bg); border-radius:12px; border:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-weight:600; font-size:14px;">ציר ${num}</span>
+                <span style="font-size:12px; color:var(--text-muted);">${c.start.substring(11,16)}</span>
+            </div>
+            <div style="display:flex; gap:16px; font-size:13px;">
+                <span>⏱️ <strong>${fmtSec(c.duration)}</strong></span>
+                ${c.interval ? `<span>📐 מרווח: <strong>${fmtSec(c.interval)}</strong></span>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+
+    // Summary
+    if (done.length >= 2) {
+        const avgDur = Math.round(done.reduce((s, c) => s + (c.duration || 0), 0) / done.length);
+        const intervals = done.filter(c => c.interval).map(c => c.interval);
+        const avgInterval = intervals.length ? Math.round(intervals.reduce((a,b) => a+b, 0) / intervals.length) : null;
+        const sumEl = document.getElementById('contractionSummary');
+        sumEl.style.display = 'block';
+        sumEl.innerHTML = `<strong>סיכום סשן (${done.length} צירים):</strong><br>
+            משך ממוצע: <strong>${fmtSec(avgDur)}</strong><br>
+            ${avgInterval ? `מרווח ממוצע: <strong>${fmtSec(avgInterval)}</strong><br>` : ''}
+            ${avgInterval && avgInterval <= 300 ? '<strong style="color:#C53030;">⚠️ צירים קרובים — שקלי ללכת לבית חולים!</strong>' : ''}`;
+    }
+}
+
+async function clearSession() {
+    if (!confirm('לנקות את הסשן הנוכחי?')) return;
+    await fetch('/api/contractions', {method: 'DELETE'});
+    session = [];
+    document.getElementById('contractionSummary').style.display = 'none';
+    renderSession();
+}
+
+loadSession();
+</script>
+{% endblock %}

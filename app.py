@@ -614,6 +614,433 @@ def delete_measurement(m_id):
     return jsonify({'success': True})
 
 
+# ─── Weight Tracker ───────────────────────────────────────────────────────────
+
+@app.route('/weight')
+def weight():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    weights = sorted(user.get('weight', []), key=lambda w: w['week'])
+    return render_template('weight.html', user=user, current_week=current_week, weights=weights)
+
+
+@app.route('/api/weight', methods=['POST'])
+def add_weight():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    try:
+        week = int(data.get('week', 0))
+        kg = float(data.get('kg', 0))
+    except (ValueError, TypeError):
+        return jsonify({'error': 'ערכים לא תקינים'}), 400
+    if week < 1 or week > 40 or kg < 30 or kg > 200:
+        return jsonify({'error': 'ערכים לא תקינים'}), 400
+    user.setdefault('weight', []).append({
+        'id': uuid.uuid4().hex[:10], 'week': week, 'kg': kg,
+        'date': date.today().isoformat(),
+    })
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+@app.route('/api/weight/<w_id>', methods=['DELETE'])
+def delete_weight(w_id):
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    user['weight'] = [w for w in user.get('weight', []) if w['id'] != w_id]
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+# ─── Blood Pressure Tracker ───────────────────────────────────────────────────
+
+@app.route('/bp')
+def bp():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    readings = sorted(user.get('bp', []), key=lambda r: r['date'], reverse=True)
+    return render_template('bp.html', user=user, current_week=current_week, readings=readings)
+
+
+@app.route('/api/bp', methods=['POST'])
+def add_bp():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    try:
+        systolic = int(data.get('systolic', 0))
+        diastolic = int(data.get('diastolic', 0))
+        pulse = int(data.get('pulse')) if data.get('pulse') else None
+    except (ValueError, TypeError):
+        return jsonify({'error': 'ערכים לא תקינים'}), 400
+    if systolic < 70 or systolic > 200 or diastolic < 40 or diastolic > 130:
+        return jsonify({'error': 'ערכים לא תקינים'}), 400
+    current_week = get_current_week(user)
+    user.setdefault('bp', []).append({
+        'id': uuid.uuid4().hex[:10], 'systolic': systolic, 'diastolic': diastolic,
+        'pulse': pulse, 'week': current_week, 'date': date.today().isoformat(),
+        'time': datetime.now().strftime('%H:%M'),
+    })
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+@app.route('/api/bp/<bp_id>', methods=['DELETE'])
+def delete_bp(bp_id):
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    user['bp'] = [r for r in user.get('bp', []) if r['id'] != bp_id]
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+# ─── Symptoms Log ─────────────────────────────────────────────────────────────
+
+SYMPTOM_OPTIONS = [
+    {'key': 'nausea',             'emoji': '🤢', 'label': 'בחילה'},
+    {'key': 'heartburn',          'emoji': '🔥', 'label': 'צרבת'},
+    {'key': 'back_pain',          'emoji': '🦴', 'label': 'כאב גב'},
+    {'key': 'fatigue',            'emoji': '😴', 'label': 'עייפות'},
+    {'key': 'swelling',           'emoji': '💧', 'label': 'נפיחות'},
+    {'key': 'headache',           'emoji': '🤕', 'label': 'כאב ראש'},
+    {'key': 'cramps',             'emoji': '⚡', 'label': 'כאבי בטן'},
+    {'key': 'shortness_breath',   'emoji': '💨', 'label': 'קוצר נשימה'},
+    {'key': 'insomnia',           'emoji': '🌙', 'label': 'נדודי שינה'},
+    {'key': 'mood_swings',        'emoji': '💜', 'label': 'שינויי מצב רוח'},
+    {'key': 'frequent_urination', 'emoji': '🚽', 'label': 'תכיפות שתן'},
+    {'key': 'contractions_bh',    'emoji': '⏰', 'label': 'צירי בראקסטון'},
+]
+
+
+@app.route('/symptoms')
+def symptoms():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    today_iso = date.today().isoformat()
+    today_symptoms = user.get('symptoms', {}).get(today_iso, {})
+    history = []
+    for i in range(6, -1, -1):
+        d = (date.today() - timedelta(days=i)).isoformat()
+        s = user.get('symptoms', {}).get(d, {})
+        history.append({'date': d, 'syms': s.get('items', []), 'note': s.get('note', '')})
+    return render_template('symptoms.html', user=user, current_week=current_week,
+                           today_symptoms=today_symptoms, symptom_options=SYMPTOM_OPTIONS,
+                           history=history)
+
+
+@app.route('/api/symptoms', methods=['POST'])
+def save_symptoms():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    items = data.get('items', [])
+    note = data.get('note', '').strip()
+    today = date.today().isoformat()
+    current_week = get_current_week(user)
+    user.setdefault('symptoms', {})[today] = {'items': items, 'note': note, 'week': current_week}
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+# ─── Doctor Questions ─────────────────────────────────────────────────────────
+
+@app.route('/questions')
+def questions():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    qs = user.get('doctor_questions', [])
+    pending = [q for q in qs if not q.get('answered')]
+    answered = [q for q in qs if q.get('answered')]
+    return render_template('questions.html', user=user, current_week=current_week,
+                           pending=pending, answered=answered)
+
+
+@app.route('/api/questions', methods=['POST'])
+def add_question():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    question = data.get('question', '').strip()
+    if not question:
+        return jsonify({'error': 'חסרה שאלה'}), 400
+    user.setdefault('doctor_questions', []).append({
+        'id': uuid.uuid4().hex[:10], 'question': question,
+        'answered': False, 'created_at': datetime.now().strftime('%d.%m.%Y'),
+    })
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+@app.route('/api/questions/<q_id>/answer', methods=['POST'])
+def answer_question(q_id):
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    for q in user.get('doctor_questions', []):
+        if q['id'] == q_id:
+            q['answered'] = not q['answered']
+            break
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+@app.route('/api/questions/<q_id>', methods=['DELETE'])
+def delete_question(q_id):
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    user['doctor_questions'] = [q for q in user.get('doctor_questions', []) if q['id'] != q_id]
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+# ─── Birth Plan ───────────────────────────────────────────────────────────────
+
+BIRTH_PLAN_SECTIONS = [
+    {'key': 'pain_relief', 'title': 'שיכוך כאב 💊', 'options': [
+        {'key': 'epidural', 'label': 'אפידורל'},
+        {'key': 'natural', 'label': 'לידה טבעית ללא כאב'},
+        {'key': 'gas', 'label': 'גז צחוק (N₂O)'},
+        {'key': 'pool', 'label': 'אמבט לידה'},
+        {'key': 'massage', 'label': 'עיסוי ונשימות'},
+    ]},
+    {'key': 'environment', 'title': 'סביבת הלידה 🕯️', 'options': [
+        {'key': 'dim_lights', 'label': 'תאורה עמומה'},
+        {'key': 'music', 'label': 'מוזיקה מרגיעה'},
+        {'key': 'quiet', 'label': 'שקט מקסימלי'},
+        {'key': 'partner_present', 'label': 'בן/בת זוג נוכח/ת'},
+        {'key': 'photographer', 'label': 'צלמת לידה'},
+    ]},
+    {'key': 'after_birth', 'title': 'אחרי הלידה 🍼', 'options': [
+        {'key': 'skin_to_skin', 'label': 'מגע עור לעור מיידי'},
+        {'key': 'delayed_cord', 'label': 'עיכוב חיתוך חבל הטבור'},
+        {'key': 'partner_cuts', 'label': 'בן/בת זוג חותך/ת חבל'},
+        {'key': 'breastfeed', 'label': 'הנקה מיידית'},
+        {'key': 'no_formula', 'label': 'ללא פורמולה בלי הסכמה'},
+    ]},
+    {'key': 'interventions', 'title': 'התערבויות רפואיות 🏥', 'options': [
+        {'key': 'no_episiotomy', 'label': 'הימנעות מאפיזיוטומיה'},
+        {'key': 'minimize', 'label': 'מינימום התערבויות'},
+        {'key': 'continuous_monitor', 'label': 'מוניטור רציף'},
+        {'key': 'iv_if_needed', 'label': 'עירוי רק במידת הצורך'},
+    ]},
+]
+
+
+@app.route('/birthplan')
+def birthplan():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    plan = user.get('birth_plan', {})
+    return render_template('birthplan.html', user=user, current_week=current_week,
+                           plan=plan, sections=BIRTH_PLAN_SECTIONS)
+
+
+@app.route('/api/birthplan', methods=['POST'])
+def save_birthplan():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    plan = {}
+    for sec in BIRTH_PLAN_SECTIONS:
+        plan[sec['key']] = data.get(sec['key'], [])
+    plan['custom_notes'] = data.get('custom_notes', '').strip()
+    user['birth_plan'] = plan
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+# ─── Contraction Timer ────────────────────────────────────────────────────────
+
+@app.route('/contractions')
+def contractions():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    return render_template('contractions.html', user=user, current_week=current_week)
+
+
+@app.route('/api/contractions', methods=['GET', 'POST', 'DELETE'])
+def contractions_api():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+
+    if request.method == 'DELETE':
+        user['contractions_session'] = []
+        save_user(device_id, user)
+        return jsonify({'success': True})
+
+    if request.method == 'POST':
+        data = request.json or {}
+        action = data.get('action')
+        session = user.setdefault('contractions_session', [])
+
+        if action == 'start':
+            now_str = datetime.now().isoformat()
+            entry = {'id': uuid.uuid4().hex[:10], 'start': now_str, 'end': None,
+                     'duration': None, 'interval': None}
+            if session:
+                last = session[-1]
+                if last.get('end'):
+                    try:
+                        last_end = datetime.fromisoformat(last['end'])
+                        interval_sec = int((datetime.fromisoformat(now_str) - last_end).total_seconds())
+                        entry['interval'] = interval_sec
+                    except Exception:
+                        pass
+            session.append(entry)
+            save_user(device_id, user)
+            return jsonify({'success': True, 'id': entry['id']})
+
+        elif action == 'stop':
+            c_id = data.get('id')
+            now_str = datetime.now().isoformat()
+            for c in session:
+                if c['id'] == c_id and not c['end']:
+                    c['end'] = now_str
+                    try:
+                        duration = int((datetime.fromisoformat(now_str) - datetime.fromisoformat(c['start'])).total_seconds())
+                        c['duration'] = duration
+                    except Exception:
+                        pass
+                    break
+            save_user(device_id, user)
+            return jsonify({'success': True})
+
+    session = user.get('contractions_session', [])
+    return jsonify({'session': session})
+
+
+# ─── Nutrition Guide ──────────────────────────────────────────────────────────
+
+@app.route('/nutrition')
+def nutrition():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    trimester = 1 if current_week <= 13 else (2 if current_week <= 27 else 3)
+    return render_template('nutrition.html', user=user, current_week=current_week, trimester=trimester)
+
+
+# ─── Achievements ─────────────────────────────────────────────────────────────
+
+ALL_ACHIEVEMENTS = [
+    {'id': 'week1',     'emoji': '🌱', 'title': 'ההתחלה',        'desc': 'ברוכה הבאה למסע!',                  'week': 1},
+    {'id': 'heartbeat', 'emoji': '💓', 'title': 'לב פועם',        'desc': 'הלב של התינוק כבר פועם!',            'week': 6},
+    {'id': 'trim2',     'emoji': '🌞', 'title': 'טרימסטר שני!',   'desc': 'סיימת את הטרימסטר הראשון!',          'week': 13},
+    {'id': 'halfway',   'emoji': '🎉', 'title': 'חצי הדרך!',      'desc': 'שבוע 20 — אמצע ההריון!',             'week': 20},
+    {'id': 'viable',    'emoji': '⭐', 'title': 'שבוע הכדאיות',   'desc': 'שבוע 24 — תינוק בר קיימא!',          'week': 24},
+    {'id': 'trim3',     'emoji': '🌟', 'title': 'טרימסטר שלישי!', 'desc': 'הטרימסטר האחרון — כמעט שם!',         'week': 28},
+    {'id': 'week30',    'emoji': '🏆', 'title': 'שבוע 30',         'desc': 'עוד רק 10 שבועות!',                  'week': 30},
+    {'id': 'week35',    'emoji': '💎', 'title': 'כמעט מוכנה',      'desc': 'שבוע 35 — הישגה עצומה!',             'week': 35},
+    {'id': 'fullterm',  'emoji': '👑', 'title': 'Full Term!',      'desc': 'שבוע 37 — תינוק בשל ומוכן!',         'week': 37},
+    {'id': 'week40',    'emoji': '🌸', 'title': 'מועד הלידה',      'desc': 'הגעת לשבוע 40 — מדהים!',             'week': 40},
+    {'id': 'journal5',  'emoji': '📓', 'title': 'כותבת יומן',      'desc': 'כתבת 5 רשומות ביומן',        'type': 'journal',     'count': 5},
+    {'id': 'kicks50',   'emoji': '💪', 'title': 'ספרנית בעיטות',   'desc': 'רשמת 50 בעיטות — כל הכבוד!', 'type': 'kicks_total', 'count': 50},
+]
+
+
+@app.route('/achievements')
+def achievements():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    journal_count = len(user.get('journal', []))
+    kicks_total = int(sum(user.get('kicks', {}).values()))
+    unlocked = set()
+    for ach in ALL_ACHIEVEMENTS:
+        if 'week' in ach and current_week >= ach['week']:
+            unlocked.add(ach['id'])
+        elif ach.get('type') == 'journal' and journal_count >= ach['count']:
+            unlocked.add(ach['id'])
+        elif ach.get('type') == 'kicks_total' and kicks_total >= ach['count']:
+            unlocked.add(ach['id'])
+    return render_template('achievements.html', user=user, current_week=current_week,
+                           achievements=ALL_ACHIEVEMENTS, unlocked=unlocked,
+                           journal_count=journal_count, kicks_total=kicks_total)
+
+
+# ─── Exercise Guide ───────────────────────────────────────────────────────────
+
+@app.route('/exercise')
+def exercise():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    trimester = 1 if current_week <= 13 else (2 if current_week <= 27 else 3)
+    return render_template('exercise.html', user=user, current_week=current_week, trimester=trimester)
+
+
+# ─── Vitamin Tracker ──────────────────────────────────────────────────────────
+
+VITAMIN_LIST = [
+    {'key': 'folic',     'label': 'חומצה פולית', 'emoji': '🌿', 'note': '400–800 מק"ג ביום'},
+    {'key': 'iron',      'label': 'ברזל',         'emoji': '🔴', 'note': 'לפי המלצת רופא'},
+    {'key': 'd3',        'label': 'ויטמין D3',    'emoji': '☀️', 'note': '400–600 IU ביום'},
+    {'key': 'calcium',   'label': 'סידן',          'emoji': '🥛', 'note': '1000 מג ביום'},
+    {'key': 'omega3',    'label': 'אומגה 3',       'emoji': '🐟', 'note': 'DHA לפיתוח מוח התינוק'},
+    {'key': 'b12',       'label': 'ויטמין B12',    'emoji': '💊', 'note': 'חשוב במיוחד לצמחוניות'},
+    {'key': 'magnesium', 'label': 'מגנזיום',       'emoji': '✨', 'note': 'לקרמפים ולשינה טובה'},
+]
+
+
+@app.route('/vitamins')
+def vitamins():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    today = date.today().isoformat()
+    today_vitamins = user.get('vitamins', {}).get(today, {})
+    history = []
+    for i in range(6, -1, -1):
+        d = (date.today() - timedelta(days=i)).isoformat()
+        v = user.get('vitamins', {}).get(d, {})
+        count = sum(1 for vit in VITAMIN_LIST if v.get(vit['key']))
+        history.append({'date': d, 'count': count, 'total': len(VITAMIN_LIST)})
+    return render_template('vitamins.html', user=user, current_week=current_week,
+                           today_vitamins=today_vitamins, vitamin_list=VITAMIN_LIST,
+                           history=history)
+
+
+@app.route('/api/vitamins', methods=['POST'])
+def save_vitamins():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    key = data.get('key', '')
+    today = date.today().isoformat()
+    vits = user.setdefault('vitamins', {}).setdefault(today, {})
+    vits[key] = not vits.get(key, False)
+    save_user(device_id, user)
+    return jsonify({'checked': vits[key]})
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5002))
     app.run(host='0.0.0.0', port=port, debug=True)

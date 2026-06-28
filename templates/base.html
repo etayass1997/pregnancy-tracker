@@ -81,6 +81,56 @@
                 <span class="nav-icon">📏</span> מד הבטן
             </a>
         </li>
+        <li>
+            <a href="{{ url_for('weight') }}" class="nav-link {% if request.endpoint == 'weight' %}active{% endif %}">
+                <span class="nav-icon">⚖️</span> מעקב משקל
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('bp') }}" class="nav-link {% if request.endpoint == 'bp' %}active{% endif %}">
+                <span class="nav-icon">🩺</span> לחץ דם
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('symptoms') }}" class="nav-link {% if request.endpoint == 'symptoms' %}active{% endif %}">
+                <span class="nav-icon">🩹</span> סימפטומים
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('vitamins') }}" class="nav-link {% if request.endpoint == 'vitamins' %}active{% endif %}">
+                <span class="nav-icon">💊</span> ויטמינים
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('contractions') }}" class="nav-link {% if request.endpoint == 'contractions' %}active{% endif %}">
+                <span class="nav-icon">⏱️</span> טיימר צירים
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('questions') }}" class="nav-link {% if request.endpoint == 'questions' %}active{% endif %}">
+                <span class="nav-icon">❓</span> שאלות לרופא
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('birthplan') }}" class="nav-link {% if request.endpoint == 'birthplan' %}active{% endif %}">
+                <span class="nav-icon">📝</span> תוכנית לידה
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('nutrition') }}" class="nav-link {% if request.endpoint == 'nutrition' %}active{% endif %}">
+                <span class="nav-icon">🥗</span> תזונה
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('exercise') }}" class="nav-link {% if request.endpoint == 'exercise' %}active{% endif %}">
+                <span class="nav-icon">🏃‍♀️</span> פעילות גופנית
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('achievements') }}" class="nav-link {% if request.endpoint == 'achievements' %}active{% endif %}">
+                <span class="nav-icon">🏆</span> הישגים
+            </a>
+        </li>
     </ul>
 
     <div class="sidebar-footer">

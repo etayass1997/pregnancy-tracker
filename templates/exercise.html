@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}פעילות גופנית — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🏃‍♀️ פעילות גופנית בהריון</h1>
+    <p class="page-subtitle">שבוע {{ current_week }} — טרימסטר {{ trimester }} — תנועה בריאה ובטוחה 💕</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px;">
+    <div class="card" style="padding:28px;">
+        <h3 style="color:#166534; margin-bottom:16px;">✅ מומלץ לטרימסטר {{ trimester }}</h3>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            {% if trimester == 1 %}
+            {% set exercises = [
+                ('🚶‍♀️', 'הליכה', 'קצב נוח 30 דקות ביום — הכי בטוח ומועיל'),
+                ('🏊‍♀️', 'שחייה', 'מורידה עומס מהגב, מרגיעה בחילות'),
+                ('🧘‍♀️', 'יוגה לטרימסטר ראשון', 'תנועות עדינות, נשימות, הרפיה'),
+                ('🚴‍♀️', 'אופניים סטציוניים', 'כרדיו בטוח ונוח'),
+                ('💪', 'כוח עדין', 'פלג גוף עליון עם משקולות קלות'),
+                ('🤸‍♀️', 'מתיחות', 'כל יום 10–15 דקות מרגיע מאוד'),
+            ] %}
+            {% elif trimester == 2 %}
+            {% set exercises = [
+                ('🚶‍♀️', 'הליכה מהירה', '30–45 דקות רוב ימי השבוע'),
+                ('🏊‍♀️', 'שחייה/אירובי מים', 'מעולה לגב ולציקסטים'),
+                ('🧘‍♀️', 'יוגת הריון', 'גמישות, איזון, נשימות ללידה'),
+                ('🚴‍♀️', 'ספינינג עדין', 'לא על אופניים רגילים — סיכון נפילה'),
+                ('💃', 'ריקוד עדין', 'מרים מצב רוח, קלילות'),
+                ('🏋️‍♀️', 'כוח מותאם הריון', 'עם מדריך מוסמך — חיזוק בטן וגב'),
+            ] %}
+            {% else %}
+            {% set exercises = [
+                ('🚶‍♀️', 'הליכה יומית', 'אפילו 20 דקות — עוזרת לירידת הראש'),
+                ('🏊‍♀️', 'שחייה', 'הכי נוחה — מורידה משקל הבטן'),
+                ('🧘‍♀️', 'יוגה טרימסטר 3', 'תרגולי נשימה ותנוחות ללידה'),
+                ('🤸‍♀️', 'כדור הריון', 'סיבוב על כדור — עוזר לירידת ראש'),
+                ('🚿', 'אמבטיה חמימה', 'לא חמה! — הרפיה ושחרור שרירים'),
+                ('💆‍♀️', 'עיסוי הריון', 'על ידי מטפל מוסמך בהריון'),
+            ] %}
+            {% endif %}
+            {% for emoji, name, desc in exercises %}
+            <div style="display:flex; gap:12px; padding:12px 14px; background:#F0FFF4; border-radius:12px; border:1px solid #BBF7D0;">
+                <span style="font-size:24px; flex-shrink:0;">{{ emoji }}</span>
+                <div>
+                    <div style="font-weight:600; font-size:14px;">{{ name }}</div>
+                    <div style="font-size:12px; color:#166534; margin-top:2px; line-height:1.4;">{{ desc }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card" style="padding:28px;">
+        <h3 style="color:#991B1B; margin-bottom:16px;">🚫 להימנע</h3>
+        <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;">
+            {% set avoid = [
+                ('⚽', 'ספורט מגע', 'כדורגל, כדורסל, קרב מגע — סכנת מכה לבטן'),
+                ('🎿', 'ספורט נפילה גבוה', 'גלישה, רכיבה, החלקה — סיכון נפילה'),
+                ('🤿', 'צלילה', 'לחץ אוויר מסכן את העובר'),
+                ('🏃', 'ריצה אינטנסיבית', 'בטרימסטר 3 — שיפזר לגב ואגן'),
+                ('🧗', 'טיפוס/אקסטרים', 'כל ספורט עם סיכון נפילה'),
+                ('🛌', 'שכיבה על הגב', 'מטרימסטר 2 — לחץ על כלי דם'),
+            ] %}
+            {% for emoji, name, desc in avoid %}
+            <div style="display:flex; gap:12px; padding:12px 14px; background:#FFF0F0; border-radius:12px; border:1px solid #FCA5A5;">
+                <span style="font-size:24px; flex-shrink:0;">{{ emoji }}</span>
+                <div>
+                    <div style="font-weight:600; font-size:14px;">{{ name }}</div>
+                    <div style="font-size:12px; color:#991B1B; margin-top:2px; line-height:1.4;">{{ desc }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="padding:16px; background:#FFFBEB; border-radius:12px; font-size:13px; color:#92400E; line-height:1.7; border:1px solid #FDE68A;">
+            ⚠️ <strong>הפסיקי מיד אם:</strong><br>
+            • כאב בחזה, קוצר נשימה קיצוני<br>
+            • דמם ממפות הלידה<br>
+            • כאב בטן חזק<br>
+            • ציר לפני שבוע 37<br>
+            • ראש חוזר חיל, עיניים מסתחררות
+        </div>
+    </div>
+</div>
+
+<div class="card" style="padding:28px;">
+    <h3 style="color:var(--pink); margin-bottom:16px;">💪 תרגילי קגל — חובה בכל שלב!</h3>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+        {% set kegel = [
+            ('1️⃣', 'זיהוי שרירי הרצפה', 'דמיין שאת עוצרת זרם שתן — אלה השרירים'),
+            ('2️⃣', 'כיווץ ושחרור', 'כווצי 5 שנ\' ← שחרר 5 שנ\' — 10 חזרות'),
+            ('3️⃣', 'תדירות', '3–4 סטים ביום — ניתן לעשות בכל מקום!'),
+            ('🎯', 'למה חשוב?', 'מונע דליפת שתן, מחזק לקראת הלידה וההתאוששות'),
+            ('⏰', 'מתי?', 'בזמן המתנה לאוטובוס, ישיבה, צפייה בטלוויזיה'),
+            ('📈', 'אחרי הלידה', 'עוזר להתאוששות מהירה — המשיכי גם אחרי!'),
+        ] %}
+        {% for emoji, name, desc in kegel %}
+        <div style="padding:16px; background:var(--pink-pale); border-radius:12px; border:1px solid var(--border);">
+            <div style="font-size:22px; margin-bottom:6px;">{{ emoji }}</div>
+            <div style="font-weight:600; font-size:14px; margin-bottom:4px;">{{ name }}</div>
+            <div style="font-size:12px; color:var(--text-muted); line-height:1.5;">{{ desc }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

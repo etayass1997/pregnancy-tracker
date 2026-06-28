@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}הישגים — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🏆 הישגים ואבני דרך</h1>
+    <p class="page-subtitle">כל שבוע שעובר הוא הישג מדהים — תגאי בעצמך! 🌸</p>
+</div>
+
+{% set total = achievements | length %}
+{% set done = unlocked | length %}
+<div class="card" style="padding:24px; margin-bottom:24px; text-align:center;">
+    <div style="font-size:14px; color:var(--text-muted); margin-bottom:12px;">{{ done }} מתוך {{ total }} הישגים נפתחו</div>
+    <div style="height:12px; background:var(--border); border-radius:20px; overflow:hidden; max-width:400px; margin:0 auto;">
+        <div style="height:100%; width:{{ (done / total * 100) | int }}%; background:linear-gradient(90deg,var(--pink),var(--lavender)); border-radius:20px; transition:width 0.5s;"></div>
+    </div>
+    <div style="font-size:24px; font-weight:800; color:var(--pink); margin-top:12px;">{{ (done / total * 100) | int }}%</div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
+    {% for ach in achievements %}
+    {% set is_unlocked = ach.id in unlocked %}
+    <div style="padding:24px 20px; border-radius:20px; text-align:center; transition:all 0.2s;
+                {% if is_unlocked %}
+                background:var(--white); border:2px solid var(--pink); box-shadow:var(--shadow);
+                {% else %}
+                background:var(--bg); border:2px solid var(--border); opacity:0.5;
+                {% endif %}">
+        <div style="font-size:48px; margin-bottom:10px; {% if not is_unlocked %}filter:grayscale(1){% endif %}">{{ ach.emoji }}</div>
+        <div style="font-size:15px; font-weight:700; margin-bottom:6px; color:{% if is_unlocked %}var(--text){% else %}var(--text-muted){% endif %};">
+            {{ ach.title }}
+        </div>
+        <div style="font-size:13px; color:var(--text-muted); line-height:1.4;">{{ ach.desc }}</div>
+        {% if is_unlocked %}
+        <div style="margin-top:10px; font-size:11px; font-weight:700; color:var(--pink); letter-spacing:0.5px;">✓ הושג!</div>
+        {% elif 'week' in ach %}
+        <div style="margin-top:10px; font-size:11px; color:var(--text-muted);">נפתח בשבוע {{ ach.week }}</div>
+        {% elif ach.type == 'journal' %}
+        <div style="margin-top:10px; font-size:11px; color:var(--text-muted);">{{ journal_count }}/{{ ach.count }} רשומות</div>
+        {% elif ach.type == 'kicks_total' %}
+        <div style="margin-top:10px; font-size:11px; color:var(--text-muted);">{{ kicks_total }}/{{ ach.count }} בעיטות</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% if done == total %}
+<div style="margin-top:24px; padding:24px; background:linear-gradient(135deg,var(--pink-pale),#EDE7F6); border-radius:20px; text-align:center; border:2px solid var(--pink-light);">
+    <div style="font-size:48px; margin-bottom:12px;">🎊</div>
+    <div style="font-size:20px; font-weight:700; color:var(--pink);">כל ההישגים הושגו! מדהים!</div>
+    <div style="font-size:14px; color:var(--text-muted); margin-top:6px;">את גיבורה אמיתית 💕</div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}תוכנית לידה — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">📝 תוכנית לידה</h1>
+    <p class="page-subtitle">בני את תוכנית הלידה שלך — שתפי אותה עם הצוות הרפואי 💕</p>
+</div>
+
+<div class="card" style="padding:32px; max-width:780px;">
+    {% for sec in sections %}
+    <div style="margin-bottom:28px; padding-bottom:24px; border-bottom:1px solid var(--border);">
+        <h3 style="font-size:17px; margin-bottom:16px; color:var(--text);">{{ sec.title }}</h3>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            {% for opt in sec.options %}
+            {% set selected = opt.key in (plan.get(sec.key) or []) %}
+            <label style="display:flex; align-items:center; gap:10px; padding:10px 14px;
+                          border:1.5px solid {% if selected %}var(--pink){% else %}var(--border){% endif %};
+                          background:{% if selected %}var(--pink-pale){% else %}var(--white){% endif %};
+                          border-radius:12px; cursor:pointer; transition:all 0.2s;"
+                   class="plan-option-label">
+                <input type="checkbox" name="{{ sec.key }}" value="{{ opt.key }}"
+                       {% if selected %}checked{% endif %}
+                       style="accent-color:var(--pink); width:16px; height:16px;"
+                       onchange="updatePlanLabel(this)">
+                <span style="font-size:14px;">{{ opt.label }}</span>
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <div style="margin-bottom:24px;">
+        <h3 style="font-size:17px; margin-bottom:12px; color:var(--text);">📌 הערות נוספות</h3>
+        <textarea id="customNotes" placeholder="כל דבר נוסף שחשוב לך שהצוות הרפואי ידע..."
+                  style="width:100%; height:100px; padding:12px 14px; border:1.5px solid var(--border); border-radius:12px;
+                         font-family:Heebo,sans-serif; font-size:14px; resize:none; background:var(--bg);">{{ plan.custom_notes or '' }}</textarea>
+    </div>
+
+    <div style="display:flex; gap:12px;">
+        <button class="btn btn-primary" onclick="savePlan()" style="flex:1;">שמרי תוכנית הלידה 💕</button>
+        <button class="btn btn-outline" onclick="printPlan()">הדפסי 🖨️</button>
+    </div>
+    <div id="planMsg" style="margin-top:12px; font-size:14px; text-align:center; color:var(--pink);"></div>
+</div>
+
+<div style="margin-top:16px; padding:16px 20px; background:var(--pink-pale); border-radius:14px; font-size:13px; color:var(--text-muted); line-height:1.7; max-width:780px;">
+    💡 <strong style="color:var(--text);">טיפ:</strong> תוכנית הלידה היא בקשה, לא חוזה מחייב. הצוות הרפואי יעשה כמיטב יכולתם לכבד את רצונותייך,
+    אבל בטיחות האמא והתינוק תמיד בראש.
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updatePlanLabel(checkbox) {
+    const label = checkbox.closest('label');
+    label.style.borderColor = checkbox.checked ? 'var(--pink)' : 'var(--border)';
+    label.style.background = checkbox.checked ? 'var(--pink-pale)' : 'var(--white)';
+}
+
+async function savePlan() {
+    const plan = {custom_notes: document.getElementById('customNotes').value.trim()};
+    document.querySelectorAll('input[type=checkbox][name]').forEach(cb => {
+        const key = cb.name;
+        if (!plan[key]) plan[key] = [];
+        if (cb.checked) plan[key].push(cb.value);
+    });
+    const r = await fetch('/api/birthplan', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(plan)
+    });
+    const msg = document.getElementById('planMsg');
+    if (r.ok) { msg.textContent = '✓ תוכנית הלידה נשמרה! 💕'; }
+    else { msg.textContent = 'שגיאה בשמירה'; }
+}
+
+function printPlan() {
+    window.print();
+}
+</script>
+{% endblock %}

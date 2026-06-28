@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}מדריך תזונה — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🥗 מדריך תזונה בהריון</h1>
+    <p class="page-subtitle">שבוע {{ current_week }} — טרימסטר {{ trimester }} — מה לאכול ומה להימנע 💕</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px;">
+    <div class="card" style="padding:28px;">
+        <h3 style="color:#166534; margin-bottom:16px;">✅ מומלץ לאכול</h3>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            {% set good = [
+                ('🥬', 'ירקות עלים ירוקים', 'תרד, ברוקולי, קייל — עשירים בחומצה פולית וברזל'),
+                ('🫘', 'קטניות', 'עדשים, חומוס, שעועית — ברזל, חלבון וסיבים'),
+                ('🐟', 'דגים עם אומגה 3', 'סלמון, מקרל, סרדינים — DHA לפיתוח מוח התינוק (עד 2 מנות שבועיות)'),
+                ('🥚', 'ביצים', 'חלבון איכותי, כולין ו-D3 — בבישול מלא בלבד'),
+                ('🥛', 'מוצרי חלב', 'סידן חיוני לעצמות התינוק'),
+                ('🫐', 'פירות יער', 'אנטיאוקסידנטים, ויטמין C, סיבים'),
+                ('🌰', 'אגוזים וגרעינים', 'שומנים בריאים, מגנזיום, אומגה 3'),
+                ('🥑', 'אבוקדו', 'חומצה פולית, אשלגן, שומנים בריאים'),
+            ] %}
+            {% for emoji, name, desc in good %}
+            <div style="display:flex; gap:12px; padding:10px 14px; background:#F0FFF4; border-radius:10px; border:1px solid #BBF7D0;">
+                <span style="font-size:22px; flex-shrink:0;">{{ emoji }}</span>
+                <div>
+                    <div style="font-weight:600; font-size:14px;">{{ name }}</div>
+                    <div style="font-size:12px; color:#166534; margin-top:2px;">{{ desc }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card" style="padding:28px;">
+        <h3 style="color:#991B1B; margin-bottom:16px;">🚫 להימנע</h3>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            {% set avoid = [
+                ('🍣', 'דגים עם כספית גבוהה', 'טונה גדולה, חרב, כריש — סכנה לעצבי התינוק'),
+                ('🧀', 'גבינות רכות לא מפוסטרות', 'בריה, קממבר — סכנת ליסטריה'),
+                ('🥩', 'בשר/ביצים חיים', 'סושי, סטייק לא מבושל, ביצת עין — סלמונלה'),
+                ('☕', 'קפאין מוגזם', 'עד 200 מ"ג ביום (כוס קפה אחת)'),
+                ('🍷', 'אלכוהול', 'אין כמות בטוחה בהריון — אפס לגמרי!'),
+                ('🥗', 'נבטים טריים', 'אלפלפה, שעועית ירוקה נבוטה — סיכון בקטריאלי'),
+                ('🐟', 'דגים מעושנים קרים', 'לוקס, הרינג קר — ליסטריה'),
+                ('🌿', 'תוספי צמחים לא מאושרים', 'חלק צמחים יכולים לגרום לצירים מוקדמים'),
+            ] %}
+            {% for emoji, name, desc in avoid %}
+            <div style="display:flex; gap:12px; padding:10px 14px; background:#FFF0F0; border-radius:10px; border:1px solid #FCA5A5;">
+                <span style="font-size:22px; flex-shrink:0;">{{ emoji }}</span>
+                <div>
+                    <div style="font-weight:600; font-size:14px;">{{ name }}</div>
+                    <div style="font-size:12px; color:#991B1B; margin-top:2px;">{{ desc }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="card" style="padding:28px; margin-bottom:24px;">
+    <h3 style="color:var(--pink); margin-bottom:16px;">
+        {% if trimester == 1 %}💡 טרימסטר ראשון — תזונה בשעת הבחילות
+        {% elif trimester == 2 %}💡 טרימסטר שני — זמן לאגור אנרגיה
+        {% else %}💡 טרימסטר שלישי — הגוף שלך עובד קשה
+        {% endif %}
+    </h3>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+        {% if trimester == 1 %}
+        {% set tips = [
+            ('🫚', 'ג\'ינג\'ר', 'תה ג\'ינג\'ר או מוצקים עוזרים מאוד לבחילות'),
+            ('🍞', 'פחמימות פשוטות', 'לחם יבש, קרקרים — קלים על הקיבה הבוקרית'),
+            ('🍋', 'ליים וחמוץ', 'עוזר לבחילות — נסי ללקק פרוסת ליים'),
+            ('⏰', 'אכלי כל 2–3 שעות', 'קיבה ריקה מחמירה את הבחילה'),
+            ('💧', 'שתי בין הארוחות', 'לא עם האוכל — מפחית בחילה'),
+            ('🌿', 'חומצה פולית קריטית', '400–800 מק"ג ביום — מונעת מומי עצב'),
+        ] %}
+        {% elif trimester == 2 %}
+        {% set tips = [
+            ('🥩', 'חלבון איכותי', '150–200 גרם ביום — בנייה של שרירים ואיברים'),
+            ('🔴', 'ברזל ביחד עם C', 'אכלי ירק עם ויטמין C — משפר ספיגת ברזל'),
+            ('🥛', 'סידן', '1000 מג ביום — עצמות התינוק נבנות עכשיו'),
+            ('🐟', 'אומגה 3', 'DHA חיוני לפיתוח מוח ועיניים של התינוק'),
+            ('🌿', 'ירקות מגוונים', 'צבעים שונים = ויטמינים שונים'),
+            ('💧', 'שתי 8–10 כוסות ביום', 'מי השפיר מתחלפים כל 3 שעות!'),
+        ] %}
+        {% else %}
+        {% set tips = [
+            ('🔴', 'ברזל מוגבר', 'הדרישה עולה ל-27 מג ביום — שאלי על תוסף'),
+            ('🥛', 'סידן מוכפל', 'התינוק בונה עצמות מהר — 1200 מג ביום'),
+            ('🍌', 'אשלגן לקרמפים', 'בננה, תפוח אדמה, שעועית'),
+            ('🌾', 'סיבים נגד עצירות', 'דגנים מלאים, ירקות, פירות'),
+            ('🍽️', 'ארוחות קטנות', 'הרחם לוחץ על הקיבה — כמויות קטנות כל 2 שעות'),
+            ('🧂', 'הפחיתי נתרן', 'מפחית נפיחות ויתר לחץ דם'),
+        ] %}
+        {% endif %}
+        {% for emoji, name, desc in tips %}
+        <div style="padding:14px 16px; background:var(--pink-pale); border-radius:12px; border:1px solid var(--border);">
+            <div style="font-size:24px; margin-bottom:6px;">{{ emoji }}</div>
+            <div style="font-weight:600; font-size:14px; margin-bottom:4px;">{{ name }}</div>
+            <div style="font-size:12px; color:var(--text-muted); line-height:1.5;">{{ desc }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div style="padding:14px 20px; background:var(--pink-pale); border-radius:14px; font-size:13px; color:var(--text-muted);">
+    ⚕️ המידע הנ"ל הוא כללי בלבד. היוועצי עם הרופאה שלך לפני שינויים תזונתיים משמעותיים.
+</div>
+{% endblock %}
