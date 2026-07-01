@@ -597,18 +597,72 @@ function _updateThemeBtn() {
     btn.textContent = isDark ? '☀️ מצב בהיר' : '🌙 מצב כהה';
 }
 
+// ─── PWA Install ───────────────────────────────────────────────────────────
+
+let deferredInstallPrompt = null;
+
+function _isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function _isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+}
+
+function _initInstallButton() {
+    const btn = document.getElementById('installAppBtn');
+    if (!btn || _isStandalone()) return;
+
+    if (_isIOS()) {
+        btn.style.display = 'block';
+        return;
+    }
+
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        btn.style.display = 'block';
+    });
+
+    window.addEventListener('appinstalled', () => {
+        deferredInstallPrompt = null;
+        btn.style.display = 'none';
+    });
+}
+
+async function installApp() {
+    if (_isIOS()) {
+        const modal = document.getElementById('installInstructionsModal');
+        if (modal) modal.classList.add('open');
+        return;
+    }
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    const btn = document.getElementById('installAppBtn');
+    if (btn) btn.style.display = 'none';
+}
+
+function closeInstallInstructionsModal() {
+    const modal = document.getElementById('installInstructionsModal');
+    if (modal) modal.classList.remove('open');
+}
+
 // ─── Init ──────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', function () {
     initChat();
     bindUploadAreaClick();
     _updateThemeBtn();
+    _initInstallButton();
 
     const modalHandlers = [
         ['uploadModal', closeUploadModal],
         ['journalModal', closeJournalModal],
         ['apptModal', closeApptModal],
         ['nameModal', closeNameModal],
+        ['installInstructionsModal', closeInstallInstructionsModal],
     ];
     modalHandlers.forEach(([id, fn]) => {
         const m = document.getElementById(id);

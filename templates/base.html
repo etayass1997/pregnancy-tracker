@@ -182,6 +182,7 @@
     <div class="sidebar-footer">
         <a href="{{ url_for('setup') }}" class="settings-link">⚙️ עדכון פרטים</a>
         <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggleBtn">🌙 מצב כהה</button>
+        <button class="install-app-btn" onclick="installApp()" id="installAppBtn" style="display:none;">📲 התקיני כאפליקציה</button>
     </div>
 </nav>
 {% endif %}
@@ -218,6 +219,22 @@
     <div class="chat-input-area">
         <input type="text" id="chatInput" placeholder="שאלי אותי משהו..." onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage();}">
         <button class="send-btn" onclick="sendMessage()" id="sendBtn">שלחי</button>
+    </div>
+</div>
+
+<!-- iOS Install Instructions Modal -->
+<div class="modal" id="installInstructionsModal">
+    <div class="modal-card">
+        <h2 class="modal-title">📲 התקנת האפליקציה</h2>
+        <p style="color:var(--text-muted);font-size:15px;line-height:1.8;margin-bottom:16px;">
+            כדי להתקין את בטן מלאה על מסך הבית:
+        </p>
+        <ol style="padding-inline-start:20px;color:var(--text);font-size:15px;line-height:2;">
+            <li>לחצי על כפתור השיתוף <strong>⬆️</strong> בשורת הכתובת של Safari</li>
+            <li>גללי ובחרי <strong>״הוסף למסך הבית״</strong></li>
+            <li>לחצי <strong>״הוסף״</strong> — האפליקציה תופיע כמו כל אפליקציה אחרת 💕</li>
+        </ol>
+        <button type="button" class="btn btn-primary" style="margin-top:20px;width:100%" onclick="closeInstallInstructionsModal()">הבנתי</button>
     </div>
 </div>
 {% endif %}

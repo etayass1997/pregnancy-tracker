@@ -421,6 +421,16 @@ main.with-sidebar { margin-right: 230px; }
 }
 .theme-toggle-btn:hover { background: var(--pink-pale); color: var(--pink); border-color: var(--pink-light); }
 
+.install-app-btn {
+    display: block; width: 100%; margin-top: 8px; padding: 10px 14px;
+    border: none; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--pink), var(--pink-light));
+    color: white; font-size: 14px; font-weight: 600;
+    font-family: 'Heebo', sans-serif; text-align: center;
+    cursor: pointer; transition: all 0.2s;
+}
+.install-app-btn:hover { box-shadow: 0 4px 14px rgba(212,115,154,0.35); transform: translateY(-1px); }
+
 /* ─── Chat FAB (Pua avatar) ─── */
 .chat-fab {
     position: fixed; bottom: 20px; left: 24px;
