@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}שינויי עור — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🌊 מעקב שינויי עור</h1>
+    <p class="page-subtitle">תעדי שינויים בעור לאורך ההריון — עם אפשרות לצרף תמונה 💕</p>
+</div>
+
+<div class="card" style="padding:28px; margin-bottom:24px;">
+    <h3 style="margin-bottom:16px; color:var(--pink);">מה קורה היום?</h3>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-bottom:16px;" id="skinOptions">
+        {% for opt in skin_options %}
+        <div class="symptom-chip" data-key="{{ opt.key }}" onclick="toggleSkinItem('{{ opt.key }}', this)"
+             style="display:flex; align-items:center; gap:8px; padding:10px 14px; border:1.5px solid var(--border);
+                    border-radius:12px; cursor:pointer; transition:all 0.2s; user-select:none;">
+            <span style="font-size:18px;">{{ opt.emoji }}</span>
+            <span style="font-size:13px; font-weight:500;">{{ opt.label }}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <textarea id="skinNote" placeholder="הערה נוספת (לא חובה)..."
+              style="width:100%; height:70px; padding:12px 14px; border:1.5px solid var(--border); border-radius:12px;
+                     font-family:Heebo,sans-serif; font-size:14px; resize:none; background:var(--bg); margin-bottom:16px;"></textarea>
+
+    <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:14px; color:var(--text-muted); margin-bottom:8px;">תמונה (לא חובה)</label>
+        <input type="file" id="skinPhotoFile" accept="image/*" onchange="previewSkinPhoto(this)">
+        <div id="skinPhotoPreview" style="margin-top:10px;"></div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveSkinEntry()" style="width:100%;">שמרי רשומה 🌸</button>
+    <div id="skinMsg" style="margin-top:12px; font-size:14px; text-align:center; color:var(--pink);"></div>
+</div>
+
+{% if entries %}
+<div class="journal-list" id="skinList">
+    {% for e in entries %}
+    <div class="journal-card" id="skin-{{ e.id }}">
+        <div class="journal-card-header">
+            <span class="journal-week-badge">שבוע {{ e.week }}</span>
+            <span class="journal-date">{{ e.date }}</span>
+        </div>
+        {% if e['items'] %}
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+            {% for key in e['items'] %}
+            {% set opt = skin_options | selectattr('key', 'equalto', key) | first %}
+            {% if opt %}<span style="font-size:13px; background:var(--pink-pale); border-radius:10px; padding:4px 10px;">{{ opt.emoji }} {{ opt.label }}</span>{% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% if e.note %}<div class="journal-text">{{ e.note }}</div>{% endif %}
+        {% if e.photo_id %}
+        <div class="skin-photo-thumb" data-photo-id="{{ e.photo_id }}" style="margin-top:10px; max-width:160px; border-radius:12px; overflow:hidden;"></div>
+        {% endif %}
+        <div class="journal-actions">
+            <button class="journal-action-btn danger" onclick="deleteSkinEntry('{{ e.id }}', {{ e.photo_id or 'null' }})">🗑️ מחיקה</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🌊</div>
+    <h3>אין עדיין רשומות</h3>
+    <p>תעדי שינויים בעור שלך לאורך ההריון</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedSkinItems = new Set();
+let skinPhotoFile = null;
+
+function toggleSkinItem(key, el) {
+    if (selectedSkinItems.has(key)) {
+        selectedSkinItems.delete(key);
+        el.style.background = ''; el.style.borderColor = 'var(--border)';
+    } else {
+        selectedSkinItems.add(key);
+        el.style.background = 'var(--pink-pale)'; el.style.borderColor = 'var(--pink)';
+    }
+}
+
+function previewSkinPhoto(input) {
+    const file = input.files[0];
+    if (!file) { skinPhotoFile = null; return; }
+    skinPhotoFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+        document.getElementById('skinPhotoPreview').innerHTML =
+            `<img src="${e.target.result}" style="max-width:160px; border-radius:12px;">`;
+    };
+    reader.readAsDataURL(file);
+}
+
+async function saveSkinEntry() {
+    const note = document.getElementById('skinNote').value.trim();
+    const msg = document.getElementById('skinMsg');
+    let photo_id = null;
+    try {
+        if (skinPhotoFile) {
+            photo_id = await _addPhoto(skinPhotoFile, {{ current_week }}, '', 'skin');
+        }
+        const r = await fetch('/api/skin', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({items: [...selectedSkinItems], note, photo_id})
+        });
+        if (r.ok) { msg.textContent = '✓ נשמר! 💕'; setTimeout(() => location.reload(), 900); }
+        else { msg.textContent = 'שגיאה בשמירה'; }
+    } catch (e) {
+        msg.textContent = 'שגיאה: ' + e.message;
+    }
+}
+
+async function deleteSkinEntry(id, photoId) {
+    if (!confirm('למחוק רשומה זו?')) return;
+    await fetch('/api/skin/' + id, {method: 'DELETE'});
+    if (photoId) { try { await _deletePhoto(photoId); } catch {} }
+    document.getElementById('skin-' + id).remove();
+}
+
+async function loadSkinThumbnails() {
+    const thumbs = document.querySelectorAll('.skin-photo-thumb');
+    for (const el of thumbs) {
+        const id = parseInt(el.dataset.photoId);
+        try {
+            const photo = await _getPhoto(id);
+            if (photo) {
+                const url = URL.createObjectURL(photo.blob);
+                el.innerHTML = `<img src="${url}" style="width:100%; display:block;">`;
+            }
+        } catch {}
+    }
+}
+document.addEventListener('DOMContentLoaded', loadSkinThumbnails);
+</script>
+{% endblock %}

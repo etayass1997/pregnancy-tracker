@@ -7,7 +7,10 @@
         <h1 class="page-title">📓 היומן שלי</h1>
         <p class="page-subtitle">תעדי את הרגשות, המחשבות והרגעים המיוחדים</p>
     </div>
-    <button class="btn btn-primary" onclick="openJournalModal()">+ רשומה חדשה</button>
+    <div style="display:flex; gap:10px;">
+        <a href="{{ url_for('journal_export') }}" target="_blank" class="btn btn-outline">🖨️ ייצוא PDF</a>
+        <button class="btn btn-primary" onclick="openJournalModal()">+ רשומה חדשה</button>
+    </div>
 </div>
 
 {% if entries %}

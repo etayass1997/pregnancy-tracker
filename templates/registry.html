@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}רשימת ציוד — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+        <h1 class="page-title">🛍️ רשימת ציוד לתינוק</h1>
+        <p class="page-subtitle">{{ purchased_count }} נרכשו מתוך {{ items | length }} · עלות כוללת: ₪{{ '%.0f'|format(total_cost) }} (נרכש: ₪{{ '%.0f'|format(purchased_cost) }})</p>
+    </div>
+    <button class="btn btn-primary" onclick="openRegistryModal()">+ הוספת פריט</button>
+</div>
+
+{% if items %}
+<div class="names-grid" id="registryGrid">
+    {% for i in items %}
+    <div class="name-card" id="reg-{{ i.id }}" style="{% if i.purchased %}opacity:0.55;{% endif %}">
+        <div class="name-text">{{ i.name }}</div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+            {{ i.category }}{% if i.price %} · ₪{{ '%.0f'|format(i.price) }}{% endif %}
+        </div>
+        {% if i.link %}<a href="{{ i.link }}" target="_blank" rel="noopener" style="font-size:12px; color:var(--pink);">🔗 לינק למוצר</a>{% endif %}
+        <div class="name-actions">
+            <button class="like-btn {% if i.purchased %}liked{% endif %}" onclick="togglePurchased('{{ i.id }}', this)" title="נרכש">
+                {{ '✅' if i.purchased else '🛒' }}
+            </button>
+            <button class="name-del-btn" onclick="deleteRegistryItem('{{ i.id }}')" title="הסרה">✕</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🛍️</div>
+    <h3>אין עדיין פריטים</h3>
+    <p>התחילי לבנות את רשימת הציוד לתינוק — עגלה, מיטה, בגדים ועוד</p>
+    <button class="btn btn-primary" onclick="openRegistryModal()" style="margin-top:20px">הוסיפי פריט ראשון 💕</button>
+</div>
+{% endif %}
+
+<div class="modal" id="registryModal">
+    <div class="modal-card">
+        <h2 class="modal-title">🛍️ הוספת פריט</h2>
+        <div class="form-group">
+            <label>שם הפריט</label>
+            <input type="text" id="regName" placeholder="לדוגמה: עגלת תינוק">
+        </div>
+        <div class="form-group">
+            <label>קטגוריה</label>
+            <input type="text" id="regCategory" placeholder="לדוגמה: ניידות, ריהוט, ביגוד...">
+        </div>
+        <div class="form-group">
+            <label>מחיר משוער (לא חובה)</label>
+            <input type="number" id="regPrice" min="0" placeholder="0">
+        </div>
+        <div class="form-group">
+            <label>קישור למוצר (לא חובה)</label>
+            <input type="text" id="regLink" placeholder="https://...">
+        </div>
+        <div style="display:flex;gap:12px">
+            <button class="btn btn-primary" onclick="submitRegistryItem()">הוספה</button>
+            <button class="btn btn-outline" onclick="closeRegistryModal()">ביטול</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openRegistryModal() { document.getElementById('registryModal').classList.add('open'); }
+function closeRegistryModal() {
+    document.getElementById('registryModal').classList.remove('open');
+    document.getElementById('regName').value = '';
+    document.getElementById('regCategory').value = '';
+    document.getElementById('regPrice').value = '';
+    document.getElementById('regLink').value = '';
+}
+async function submitRegistryItem() {
+    const name = document.getElementById('regName').value.trim();
+    const category = document.getElementById('regCategory').value.trim();
+    const price = document.getElementById('regPrice').value;
+    const link = document.getElementById('regLink').value.trim();
+    if (!name) { alert('נא להכניס שם פריט'); return; }
+    const r = await fetch('/api/registry', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, category, price, link})
+    });
+    if (r.ok) location.reload();
+}
+async function togglePurchased(id, el) {
+    await fetch('/api/registry/' + id + '/toggle', {method: 'POST'});
+    location.reload();
+}
+async function deleteRegistryItem(id) {
+    if (!confirm('להסיר פריט זה?')) return;
+    await fetch('/api/registry/' + id, {method: 'DELETE'});
+    document.getElementById('reg-' + id).remove();
+}
+</script>
+{% endblock %}

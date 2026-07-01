@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}אנשי קשר לחירום — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+        <h1 class="page-title">📞 אנשי קשר לחירום</h1>
+        <p class="page-subtitle">כל מספרי הטלפון החשובים במקום אחד — נגישים בלחיצה 💕</p>
+    </div>
+    <button class="btn btn-primary" onclick="openContactModal()">+ הוספת איש קשר</button>
+</div>
+
+{% if contacts %}
+<div class="names-grid" id="contactsGrid">
+    {% for c in contacts %}
+    <div class="name-card" id="contact-{{ c.id }}">
+        <div class="name-text">{{ c.name }}</div>
+        {% if c.role %}<div style="font-size:12px; color:var(--text-muted); margin-top:2px;">{{ c.role }}</div>{% endif %}
+        <a href="tel:{{ c.phone }}" style="display:block; font-size:18px; font-weight:700; color:var(--pink); margin-top:8px;">📞 {{ c.phone }}</a>
+        {% if c.notes %}<div style="font-size:12px; color:var(--text-muted); margin-top:6px;">{{ c.notes }}</div>{% endif %}
+        <div class="name-actions">
+            <button class="name-del-btn" onclick="deleteContact('{{ c.id }}')" title="הסרה">✕</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📞</div>
+    <h3>אין עדיין אנשי קשר</h3>
+    <p>שמרי כאן את הרופאה, המיילדת, בית החולים ואנשי קשר חשובים נוספים</p>
+    <button class="btn btn-primary" onclick="openContactModal()" style="margin-top:20px">הוסיפי איש קשר ראשון 💕</button>
+</div>
+{% endif %}
+
+<div class="modal" id="contactModal">
+    <div class="modal-card">
+        <h2 class="modal-title">📞 איש קשר חדש</h2>
+        <div class="form-group">
+            <label>שם</label>
+            <input type="text" id="contactName" placeholder="לדוגמה: ד״ר כהן">
+        </div>
+        <div class="form-group">
+            <label>תפקיד (לא חובה)</label>
+            <input type="text" id="contactRole" placeholder="לדוגמה: גינקולוגית, מיילדת, בית חולים...">
+        </div>
+        <div class="form-group">
+            <label>טלפון</label>
+            <input type="tel" id="contactPhone" placeholder="050-1234567">
+        </div>
+        <div class="form-group">
+            <label>הערות (לא חובה)</label>
+            <textarea id="contactNotes" rows="2" placeholder="שעות מענה, כתובת..."></textarea>
+        </div>
+        <div style="display:flex;gap:12px">
+            <button class="btn btn-primary" onclick="submitContact()">הוספה</button>
+            <button class="btn btn-outline" onclick="closeContactModal()">ביטול</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openContactModal() { document.getElementById('contactModal').classList.add('open'); }
+function closeContactModal() {
+    document.getElementById('contactModal').classList.remove('open');
+    document.getElementById('contactName').value = '';
+    document.getElementById('contactRole').value = '';
+    document.getElementById('contactPhone').value = '';
+    document.getElementById('contactNotes').value = '';
+}
+async function submitContact() {
+    const name = document.getElementById('contactName').value.trim();
+    const role = document.getElementById('contactRole').value.trim();
+    const phone = document.getElementById('contactPhone').value.trim();
+    const notes = document.getElementById('contactNotes').value.trim();
+    if (!name || !phone) { alert('נא למלא שם וטלפון'); return; }
+    const r = await fetch('/api/contacts', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, role, phone, notes})
+    });
+    if (r.ok) location.reload();
+}
+async function deleteContact(id) {
+    if (!confirm('להסיר איש קשר זה?')) return;
+    await fetch('/api/contacts/' + id, {method: 'DELETE'});
+    document.getElementById('contact-' + id).remove();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}בדיקת סוכר — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🍬 מעקב סוכר בדם</h1>
+    <p class="page-subtitle">מעקב אחרי בדיקות סוכר — חשוב לזיהוי מוקדם של סוכרת הריון 💕</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+    <div class="card" style="padding:28px;">
+        <h3 style="margin-bottom:20px; color:var(--pink);">הוסיפי מדידה</h3>
+
+        <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:14px; color:var(--text-muted); margin-bottom:6px;">סוג הבדיקה</label>
+            <select id="glucoseType" style="width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:12px; font-family:Heebo,sans-serif; font-size:15px; background:var(--bg);">
+                {% for t in glucose_types %}
+                <option value="{{ t.key }}">{{ t.label }} (תקין עד {{ t.max }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="margin-bottom:20px;">
+            <label style="display:block; font-size:14px; color:var(--text-muted); margin-bottom:6px;">ערך (mg/dL)</label>
+            <input type="number" id="glucoseValue" min="30" max="400" placeholder="90"
+                   style="width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:12px; font-family:Heebo,sans-serif; font-size:15px; background:var(--bg);">
+        </div>
+
+        <button class="btn btn-primary" onclick="addGlucose()" style="width:100%;">שמרי מדידה 🍬</button>
+        <div id="glucoseMsg" style="margin-top:12px; font-size:14px; text-align:center; color:var(--pink);"></div>
+
+        <div style="margin-top:20px; padding:14px; background:var(--pink-pale); border-radius:12px; font-size:13px; line-height:1.7; color:var(--text-muted);">
+            <strong style="color:var(--text);">ערכי סף (סקר סוכרת הריון):</strong><br>
+            {% for t in glucose_types %}
+            {{ t.label }}: עד {{ t.max }} mg/dL<br>
+            {% endfor %}
+            תוצאה חורגת אינה אבחנה — תמיד יש לאמת מול הרופא/ה 🌸
+        </div>
+    </div>
+
+    <div class="card" style="padding:28px;">
+        <h3 style="margin-bottom:16px; color:var(--pink);">📊 מדידות אחרונות</h3>
+        {% if readings %}
+        <div style="display:flex; flex-direction:column; gap:12px; max-height:420px; overflow-y:auto;">
+            {% for r in readings[:15] %}
+            {% set status = 'ok' if r.value <= r.max else 'high' %}
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 16px;
+                        background:{% if status == 'ok' %}#F0FFF4{% else %}#FFF0F0{% endif %};
+                        border-radius:12px; border:1px solid {% if status == 'ok' %}#BBF7D0{% else %}#FCA5A5{% endif %};"
+                 id="grow-{{ r.id }}">
+                <div>
+                    <div style="font-size:20px; font-weight:700; color:{% if status == 'ok' %}#166534{% else %}#991B1B{% endif %};">
+                        {{ r.value }} <span style="font-size:13px; font-weight:400; color:var(--text-muted);">mg/dL</span>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">{{ r.type_label }} · {{ r.date }} {{ r.time }} · שבוע {{ r.week }}</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">{% if status == 'ok' %}✅{% else %}⚠️{% endif %}</span>
+                    <button onclick="deleteGlucose('{{ r.id }}')"
+                            style="background:none; border:none; cursor:pointer; color:var(--text-muted); font-size:16px;">🗑️</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align:center; padding:40px 20px; color:var(--text-muted);">
+            <div style="font-size:40px; margin-bottom:12px;">🍬</div>
+            <div>אין עדיין מדידות — הוסיפי את הראשונה!</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function addGlucose() {
+    const test_type = document.getElementById('glucoseType').value;
+    const value = parseInt(document.getElementById('glucoseValue').value);
+    const msg = document.getElementById('glucoseMsg');
+    if (!value) { msg.textContent = 'הכניסי ערך מדידה'; return; }
+    const r = await fetch('/api/glucose', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({test_type, value})
+    });
+    if (r.ok) {
+        msg.style.color = 'var(--pink)'; msg.textContent = '✓ נשמר!';
+        setTimeout(() => location.reload(), 800);
+    } else { const d = await r.json(); msg.style.color = 'red'; msg.textContent = d.error || 'שגיאה'; }
+}
+
+async function deleteGlucose(id) {
+    if (!confirm('למחוק מדידה זו?')) return;
+    await fetch('/api/glucose/' + id, {method: 'DELETE'});
+    document.getElementById('grow-' + id).remove();
+}
+</script>
+{% endblock %}

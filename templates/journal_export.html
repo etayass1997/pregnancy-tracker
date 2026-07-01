@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>יומן ההריון של {{ user.display_name }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    body { font-family: 'Heebo', sans-serif; color: #3D2B3D; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    .export-header { text-align: center; border-bottom: 3px solid #D4739A; padding-bottom: 20px; margin-bottom: 30px; }
+    .export-header h1 { color: #D4739A; font-size: 28px; margin-bottom: 6px; }
+    .export-header p { color: #8A6A8A; font-size: 14px; }
+    .entry { break-inside: avoid; margin-bottom: 24px; padding: 16px 20px; border: 1px solid #F0D8E8; border-radius: 12px; }
+    .entry-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: #8A6A8A; }
+    .entry-week { color: #D4739A; font-weight: 700; }
+    .entry-text { white-space: pre-wrap; line-height: 1.7; font-size: 15px; }
+    .print-bar { text-align: center; margin-bottom: 30px; }
+    .print-bar button { background: #D4739A; color: white; border: none; padding: 12px 28px; border-radius: 12px; font-size: 15px; font-family: inherit; cursor: pointer; }
+    @media print {
+        .print-bar { display: none; }
+        body { margin: 0; }
+    }
+</style>
+</head>
+<body>
+    <div class="print-bar">
+        <button onclick="window.print()">🖨️ שמירה כ-PDF / הדפסה</button>
+    </div>
+    <div class="export-header">
+        <h1>📓 יומן ההריון של {{ user.display_name }}</h1>
+        <p>שבוע {{ current_week }} מתוך 40 · מועד לידה משוער: {{ due_date.strftime('%d.%m.%Y') }}</p>
+    </div>
+
+    {% if entries %}
+        {% for e in entries %}
+        <div class="entry">
+            <div class="entry-header">
+                <span class="entry-week">שבוע {{ e.week }}</span>
+                <span>{{ e.created_at }}</span>
+            </div>
+            <div class="entry-text">{{ e.text }}</div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="text-align:center; color:#8A6A8A;">אין עדיין רשומות יומן.</p>
+    {% endif %}
+</body>
+</html>

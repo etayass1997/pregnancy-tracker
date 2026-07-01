@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}השוואת תמונות — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+        <h1 class="page-title">🔍 השוואת תמונות בטן</h1>
+        <p class="page-subtitle">בחרי שני שבועות והשוואי את השינוי לאורך הזמן</p>
+    </div>
+    <a href="{{ url_for('gallery') }}" class="btn btn-outline">← חזרה לגלריה</a>
+</div>
+
+<div class="card" style="padding:24px; margin-bottom:20px;">
+    <div style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+        <div>
+            <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:6px;">תמונה ראשונה (לפני)</label>
+            <select id="weekBefore" onchange="renderCompare()" style="padding:10px 14px; border:1.5px solid var(--border); border-radius:12px; background:var(--bg); font-family:Heebo,sans-serif;"></select>
+        </div>
+        <div>
+            <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:6px;">תמונה שנייה (אחרי)</label>
+            <select id="weekAfter" onchange="renderCompare()" style="padding:10px 14px; border:1.5px solid var(--border); border-radius:12px; background:var(--bg); font-family:Heebo,sans-serif;"></select>
+        </div>
+    </div>
+</div>
+
+<div id="compareEmpty" class="empty-state" style="display:none;">
+    <div class="empty-icon">📷</div>
+    <h3>צריך לפחות 2 תמונות</h3>
+    <p>העלי תמונות בגלריה כדי להשוות ביניהן</p>
+</div>
+
+<div id="compareWrap" style="display:none;">
+    <div class="card" style="padding:20px;">
+        <div id="sliderContainer" style="position:relative; width:100%; max-width:520px; margin:0 auto; aspect-ratio:3/4; border-radius:16px; overflow:hidden; user-select:none;">
+            <img id="imgAfter" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;">
+            <div id="imgBeforeWrap" style="position:absolute; inset:0; width:50%; overflow:hidden;">
+                <img id="imgBefore" style="width:520px; max-width:none; height:100%; object-fit:cover;">
+            </div>
+            <div id="sliderHandle" style="position:absolute; top:0; bottom:0; left:50%; width:4px; background:var(--pink); cursor:ew-resize; transform:translateX(-50%);">
+                <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:36px; height:36px; background:var(--pink); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:16px;">↔</div>
+            </div>
+            <div style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.5); color:white; padding:4px 10px; border-radius:8px; font-size:12px;" id="labelBefore"></div>
+            <div style="position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.5); color:white; padding:4px 10px; border-radius:8px; font-size:12px;" id="labelAfter"></div>
+        </div>
+        <input type="range" id="sliderRange" min="0" max="100" value="50" style="width:100%; max-width:520px; display:block; margin:16px auto 0;">
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allPhotos = [];
+
+async function initCompare() {
+    allPhotos = (await _getPhotosByCategory('belly')).sort((a, b) => a.week - b.week);
+    const beforeSel = document.getElementById('weekBefore');
+    const afterSel = document.getElementById('weekAfter');
+
+    if (allPhotos.length < 2) {
+        document.getElementById('compareEmpty').style.display = '';
+        return;
+    }
+
+    const opts = allPhotos.map((p, idx) => `<option value="${idx}">שבוע ${p.week}${p.caption ? ' — ' + p.caption : ''}</option>`).join('');
+    beforeSel.innerHTML = opts;
+    afterSel.innerHTML = opts;
+    beforeSel.selectedIndex = 0;
+    afterSel.selectedIndex = allPhotos.length - 1;
+
+    document.getElementById('compareWrap').style.display = '';
+    renderCompare();
+}
+
+function renderCompare() {
+    const beforeIdx = parseInt(document.getElementById('weekBefore').value);
+    const afterIdx = parseInt(document.getElementById('weekAfter').value);
+    const before = allPhotos[beforeIdx];
+    const after = allPhotos[afterIdx];
+    if (!before || !after) return;
+
+    document.getElementById('imgBefore').src = URL.createObjectURL(before.blob);
+    document.getElementById('imgAfter').src = URL.createObjectURL(after.blob);
+    document.getElementById('labelBefore').textContent = 'שבוע ' + before.week;
+    document.getElementById('labelAfter').textContent = 'שבוע ' + after.week;
+}
+
+function bindSlider() {
+    const range = document.getElementById('sliderRange');
+    const wrap = document.getElementById('imgBeforeWrap');
+    const handle = document.getElementById('sliderHandle');
+    range.addEventListener('input', () => {
+        const pct = range.value;
+        wrap.style.width = pct + '%';
+        handle.style.left = pct + '%';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => { initCompare(); bindSlider(); });
+</script>
+{% endblock %}

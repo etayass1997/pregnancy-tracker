@@ -7,9 +7,12 @@
         <h1 class="page-title">📸 גלריית ההריון שלי</h1>
         <p class="page-subtitle">תעדי את כל הרגעים המיוחדים — <span id="photoCount">0</span> תמונות</p>
     </div>
-    <button class="btn btn-primary" onclick="openUploadModal()">
-        + העלאת תמונה
-    </button>
+    <div style="display:flex; gap:10px;">
+        <a href="{{ url_for('gallery_compare') }}" class="btn btn-outline">🔍 השוואת תמונות</a>
+        <button class="btn btn-primary" onclick="openUploadModal()">
+            + העלאת תמונה
+        </button>
+    </div>
 </div>
 
 <div class="gallery-grid" id="galleryGrid" style="display:none"></div>

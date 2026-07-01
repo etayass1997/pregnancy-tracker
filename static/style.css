@@ -15,6 +15,21 @@
     --radius-sm: 12px;
 }
 
+html.dark-mode {
+    --pink: #E895B5;
+    --pink-light: #6B3A52;
+    --pink-pale: #33222E;
+    --lavender: #B49BEA;
+    --lavender-light: #4A3B6B;
+    --bg: #1A1420;
+    --white: #241B2C;
+    --text: #F0E6F0;
+    --text-muted: #B49BC0;
+    --border: #3D2E48;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -396,6 +411,15 @@ main.with-sidebar { margin-right: 230px; }
     transition: all 0.2s;
 }
 .settings-link:hover { background: var(--pink-pale); color: var(--pink); border-color: var(--pink-light); }
+
+.theme-toggle-btn {
+    display: block; width: 100%; margin-top: 8px; padding: 10px 14px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--white); color: var(--text-muted);
+    font-size: 14px; font-family: 'Heebo', sans-serif; text-align: center;
+    cursor: pointer; transition: all 0.2s;
+}
+.theme-toggle-btn:hover { background: var(--pink-pale); color: var(--pink); border-color: var(--pink-light); }
 
 /* ─── Chat FAB (Pua avatar) ─── */
 .chat-fab {

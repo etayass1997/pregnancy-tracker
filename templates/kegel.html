@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}תרגילי קיגל — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🌸 תרגילי קיגל</h1>
+    <p class="page-subtitle">חיזוק רצפת האגן — עוזר בלידה ובהחלמה אחריה. יעד יומי: {{ goal }} סטים 💕</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+    <div class="card" style="padding:28px; text-align:center;">
+        <h3 style="margin-bottom:8px; color:var(--pink);">סטים היום</h3>
+        {% if streak > 0 %}
+        <div style="font-size:13px; color:var(--pink); margin-bottom:12px;">🔥 {{ streak }} ימים ברצף!</div>
+        {% endif %}
+        <div style="font-size:56px; font-weight:800; color:var(--pink);" id="kegelCount">{{ today_count }}</div>
+        <div style="font-size:14px; color:var(--text-muted); margin-bottom:24px;">מתוך {{ goal }} סטים (10 כיווצים כל סט)</div>
+
+        <button class="btn btn-primary" onclick="addSet()" style="width:100%; margin-bottom:10px;">✓ סיימתי סט</button>
+        <button class="btn btn-outline" onclick="resetKegel()" style="width:100%;">איפוס להיום</button>
+
+        <div style="margin-top:20px; padding:14px; background:var(--pink-pale); border-radius:12px; font-size:13px; line-height:1.7; color:var(--text-muted); text-align:right;">
+            <strong style="color:var(--text);">איך מבצעים:</strong><br>
+            1. כווצי את שרירי רצפת האגן (כמו לעצור זרם שתן) ל-5 שניות<br>
+            2. שחררי לאט ל-5 שניות<br>
+            3. חזרי 10 פעמים = סט אחד
+        </div>
+    </div>
+
+    <div class="card" style="padding:28px;">
+        <h3 style="margin-bottom:16px; color:var(--pink);">📊 7 ימים אחרונים</h3>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            {% for day in history %}
+            {% set dt_parts = day.date.split('-') %}
+            {% set pct = (day.count / goal * 100) | int if goal > 0 else 0 %}
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="font-size:13px; color:var(--text-muted); width:36px; flex-shrink:0;">{{ dt_parts[2] }}/{{ dt_parts[1] }}</div>
+                <div style="flex:1; height:12px; background:var(--border); border-radius:20px; overflow:hidden;">
+                    <div style="height:100%; width:{{ [pct, 100] | min }}%; background:linear-gradient(90deg,var(--pink-light),var(--pink)); border-radius:20px;"></div>
+                </div>
+                <div style="font-size:13px; font-weight:600; color:var(--pink); width:36px; text-align:left; flex-shrink:0;">{{ day.count }}/{{ goal }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function addSet() {
+    const r = await fetch('/api/kegel', {method: 'POST'});
+    const d = await r.json();
+    document.getElementById('kegelCount').textContent = d.count;
+}
+async function resetKegel() {
+    if (!confirm('לאפס את המונה של היום?')) return;
+    const r = await fetch('/api/kegel/reset', {method: 'POST'});
+    const d = await r.json();
+    document.getElementById('kegelCount').textContent = d.count;
+}
+</script>
+{% endblock %}

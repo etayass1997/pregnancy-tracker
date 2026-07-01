@@ -1041,6 +1041,533 @@ def save_vitamins():
     return jsonify({'checked': vits[key]})
 
 
+# ─── Water Intake Tracker ──────────────────────────────────────────────────────
+
+WATER_GOAL = 8  # cups (~250ml each) per day
+
+@app.route('/water')
+def water():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    today = date.today().isoformat()
+    today_count = user.get('water', {}).get(today, 0)
+    history = []
+    for i in range(6, -1, -1):
+        d = (date.today() - timedelta(days=i)).isoformat()
+        history.append({'date': d, 'count': user.get('water', {}).get(d, 0)})
+    return render_template('water.html', user=user, current_week=current_week,
+                           today_count=today_count, goal=WATER_GOAL, history=history)
+
+
+@app.route('/api/water', methods=['POST'])
+def add_water():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    today = date.today().isoformat()
+    water_data = user.setdefault('water', {})
+    water_data[today] = water_data.get(today, 0) + 1
+    save_user(device_id, user)
+    return jsonify({'count': water_data[today], 'goal': WATER_GOAL})
+
+
+@app.route('/api/water/reset', methods=['POST'])
+def reset_water():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    today = date.today().isoformat()
+    user.setdefault('water', {})[today] = 0
+    save_user(device_id, user)
+    return jsonify({'count': 0})
+
+
+# ─── Sleep Tracker ──────────────────────────────────────────────────────────────
+
+SLEEP_QUALITY_OPTIONS = [
+    {'key': 'great', 'emoji': '😴', 'label': 'מצוינת'},
+    {'key': 'good',  'emoji': '🙂', 'label': 'טובה'},
+    {'key': 'ok',    'emoji': '😐', 'label': 'בינונית'},
+    {'key': 'poor',  'emoji': '😣', 'label': 'לא טובה'},
+    {'key': 'awful', 'emoji': '😩', 'label': 'גרועה'},
+]
+
+
+@app.route('/sleep')
+def sleep():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    today = date.today().isoformat()
+    today_sleep = user.get('sleep', {}).get(today)
+    history = []
+    total_hours = 0
+    count = 0
+    for i in range(13, -1, -1):
+        d = (date.today() - timedelta(days=i)).isoformat()
+        s = user.get('sleep', {}).get(d)
+        history.append({'date': d, 'sleep': s})
+        if s:
+            total_hours += s.get('hours', 0)
+            count += 1
+    avg_hours = round(total_hours / count, 1) if count else 0
+    return render_template('sleep.html', user=user, current_week=current_week,
+                           today_sleep=today_sleep, quality_options=SLEEP_QUALITY_OPTIONS,
+                           history=history, avg_hours=avg_hours)
+
+
+@app.route('/api/sleep', methods=['POST'])
+def save_sleep():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    try:
+        hours = float(data.get('hours', 0))
+    except (ValueError, TypeError):
+        return jsonify({'error': 'ערך לא תקין'}), 400
+    quality_key = data.get('quality', '')
+    opt = next((q for q in SLEEP_QUALITY_OPTIONS if q['key'] == quality_key), None)
+    if hours < 0 or hours > 24 or not opt:
+        return jsonify({'error': 'ערכים לא תקינים'}), 400
+    today = date.today().isoformat()
+    user.setdefault('sleep', {})[today] = {
+        'hours': hours, 'quality': quality_key, 'emoji': opt['emoji'], 'label': opt['label'],
+    }
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+# ─── Glucose Test Tracker ───────────────────────────────────────────────────────
+
+GLUCOSE_TYPES = [
+    {'key': 'fasting', 'label': 'בצום',            'max': 95},
+    {'key': '1hr',     'label': 'שעה אחרי שתייה',    'max': 180},
+    {'key': '2hr',     'label': 'שעתיים אחרי שתייה', 'max': 153},
+    {'key': 'random',  'label': 'מדידה אקראית',      'max': 140},
+]
+
+
+@app.route('/glucose')
+def glucose():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    readings = sorted(user.get('glucose', []), key=lambda r: r['date'] + r.get('time', ''), reverse=True)
+    return render_template('glucose.html', user=user, current_week=current_week,
+                           readings=readings, glucose_types=GLUCOSE_TYPES)
+
+
+@app.route('/api/glucose', methods=['POST'])
+def add_glucose():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    try:
+        value = int(data.get('value', 0))
+    except (ValueError, TypeError):
+        return jsonify({'error': 'ערך לא תקין'}), 400
+    test_type = data.get('test_type', '')
+    type_def = next((t for t in GLUCOSE_TYPES if t['key'] == test_type), None)
+    if value < 30 or value > 400 or not type_def:
+        return jsonify({'error': 'ערכים לא תקינים'}), 400
+    current_week = get_current_week(user)
+    user.setdefault('glucose', []).append({
+        'id': uuid.uuid4().hex[:10], 'value': value, 'test_type': test_type,
+        'type_label': type_def['label'], 'max': type_def['max'], 'week': current_week,
+        'date': date.today().isoformat(), 'time': datetime.now().strftime('%H:%M'),
+    })
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+@app.route('/api/glucose/<g_id>', methods=['DELETE'])
+def delete_glucose(g_id):
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    user['glucose'] = [g for g in user.get('glucose', []) if g['id'] != g_id]
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+# ─── Lab Results ────────────────────────────────────────────────────────────────
+
+@app.route('/labs')
+def labs():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    results = sorted(user.get('labs', []), key=lambda r: r['date'], reverse=True)
+    return render_template('labs.html', user=user, current_week=current_week, results=results)
+
+
+@app.route('/api/labs', methods=['POST'])
+def add_lab():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    test_name = data.get('test_name', '').strip()
+    test_date = data.get('date', '').strip()
+    result = data.get('result', '').strip()
+    notes = data.get('notes', '').strip()
+    if not test_name or not test_date:
+        return jsonify({'error': 'חסר מידע'}), 400
+    user.setdefault('labs', []).append({
+        'id': uuid.uuid4().hex[:10], 'test_name': test_name, 'date': test_date,
+        'result': result, 'notes': notes, 'created_at': datetime.now().strftime('%d.%m.%Y'),
+    })
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+@app.route('/api/labs/<lab_id>', methods=['DELETE'])
+def delete_lab(lab_id):
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    user['labs'] = [l for l in user.get('labs', []) if l['id'] != lab_id]
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+# ─── Kegel Exercise Tracker ─────────────────────────────────────────────────────
+
+KEGEL_GOAL = 3  # sets per day
+
+@app.route('/kegel')
+def kegel():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    today = date.today().isoformat()
+    today_count = user.get('kegel', {}).get(today, 0)
+    streak = 0
+    d = date.today()
+    while user.get('kegel', {}).get(d.isoformat(), 0) >= KEGEL_GOAL:
+        streak += 1
+        d -= timedelta(days=1)
+    history = []
+    for i in range(6, -1, -1):
+        dd = (date.today() - timedelta(days=i)).isoformat()
+        history.append({'date': dd, 'count': user.get('kegel', {}).get(dd, 0)})
+    return render_template('kegel.html', user=user, current_week=current_week,
+                           today_count=today_count, goal=KEGEL_GOAL, streak=streak, history=history)
+
+
+@app.route('/api/kegel', methods=['POST'])
+def add_kegel():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    today = date.today().isoformat()
+    kegel_data = user.setdefault('kegel', {})
+    kegel_data[today] = kegel_data.get(today, 0) + 1
+    save_user(device_id, user)
+    return jsonify({'count': kegel_data[today], 'goal': KEGEL_GOAL})
+
+
+@app.route('/api/kegel/reset', methods=['POST'])
+def reset_kegel():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    today = date.today().isoformat()
+    user.setdefault('kegel', {})[today] = 0
+    save_user(device_id, user)
+    return jsonify({'count': 0})
+
+
+# ─── Skin Changes Tracker ───────────────────────────────────────────────────────
+
+SKIN_OPTIONS = [
+    {'key': 'stretch_marks', 'emoji': '🌊', 'label': 'סימני מתיחה'},
+    {'key': 'itching',       'emoji': '🤲', 'label': 'גירוד'},
+    {'key': 'linea_nigra',   'emoji': '➖', 'label': 'קו כהה בבטן'},
+    {'key': 'melasma',       'emoji': '🌗', 'label': 'כתמי עור'},
+    {'key': 'spider_veins',  'emoji': '🕸️', 'label': 'ורידי עכביש'},
+    {'key': 'acne',          'emoji': '🔴', 'label': 'פצעונים'},
+    {'key': 'dryness',       'emoji': '🏜️', 'label': 'עור יבש'},
+    {'key': 'glow',          'emoji': '✨', 'label': 'זוהר הריון'},
+]
+
+
+@app.route('/skin')
+def skin():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    entries = sorted(user.get('skin', []), key=lambda e: e['date'], reverse=True)
+    return render_template('skin.html', user=user, current_week=current_week,
+                           entries=entries, skin_options=SKIN_OPTIONS)
+
+
+@app.route('/api/skin', methods=['POST'])
+def add_skin_entry():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    items = data.get('items', [])
+    note = data.get('note', '').strip()
+    photo_id = data.get('photo_id')
+    current_week = get_current_week(user)
+    user.setdefault('skin', []).append({
+        'id': uuid.uuid4().hex[:10], 'items': items, 'note': note,
+        'photo_id': photo_id, 'week': current_week, 'date': date.today().isoformat(),
+    })
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+@app.route('/api/skin/<entry_id>', methods=['DELETE'])
+def delete_skin_entry(entry_id):
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    user['skin'] = [e for e in user.get('skin', []) if e['id'] != entry_id]
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+# ─── Baby Registry / Gear List ──────────────────────────────────────────────────
+
+@app.route('/registry')
+def registry():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    items = user.get('registry', [])
+    purchased = [i for i in items if i.get('purchased')]
+    total_cost = sum(i.get('price') or 0 for i in items)
+    purchased_cost = sum(i.get('price') or 0 for i in purchased)
+    return render_template('registry.html', user=user, current_week=current_week,
+                           items=items, purchased_count=len(purchased),
+                           total_cost=total_cost, purchased_cost=purchased_cost)
+
+
+@app.route('/api/registry', methods=['POST'])
+def add_registry_item():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    name = data.get('name', '').strip()
+    category = data.get('category', '').strip() or 'אחר'
+    link = data.get('link', '').strip()
+    try:
+        price = float(data.get('price')) if data.get('price') else None
+    except (ValueError, TypeError):
+        price = None
+    if not name:
+        return jsonify({'error': 'חסר שם פריט'}), 400
+    user.setdefault('registry', []).append({
+        'id': uuid.uuid4().hex[:10], 'name': name, 'category': category,
+        'link': link, 'price': price, 'purchased': False,
+    })
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+@app.route('/api/registry/<item_id>/toggle', methods=['POST'])
+def toggle_registry_item(item_id):
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    for i in user.get('registry', []):
+        if i['id'] == item_id:
+            i['purchased'] = not i['purchased']
+            break
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+@app.route('/api/registry/<item_id>', methods=['DELETE'])
+def delete_registry_item(item_id):
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    user['registry'] = [i for i in user.get('registry', []) if i['id'] != item_id]
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+# ─── Hospital Bag Packing (organized by bag) ────────────────────────────────────
+
+HOSPITAL_BAGS = [
+    {'key': 'mom', 'label': 'תיק אמא 👜', 'items': [
+        'כותונת לידה', 'חזיית הנקה', 'תחתוני לידה חד"פ', 'חלוק רחצה', 'נעלי בית',
+        'מוצרי טיפוח אישיים', 'מטען לטלפון',
+    ]},
+    {'key': 'baby', 'label': 'תיק תינוק 👶', 'items': [
+        'בגדי גוף (3-4)', 'שמיכה', 'כובעון', 'גרביים', 'חיתולים לגודל ראשון', 'מטפחות לחות',
+    ]},
+    {'key': 'partner', 'label': 'תיק בן/בת זוג 🧑', 'items': [
+        'בגדים להחלפה', 'חטיפים ומשקה', 'מטען לטלפון', 'מצלמה',
+    ]},
+    {'key': 'docs', 'label': 'מסמכים 📄', 'items': [
+        'תעודת זהות', 'ספר מעקב הריון', 'טופס ביטוח לאומי', 'תוכנית לידה מודפסת',
+    ]},
+]
+
+
+@app.route('/hospitalbag')
+def hospitalbag():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    checked = user.get('hospital_bag', {})
+    custom_items = user.get('hospital_bag_custom', [])
+    bags = []
+    total = 0
+    done = 0
+    for bag in HOSPITAL_BAGS:
+        entries = []
+        for idx, text in enumerate(bag['items']):
+            key = f"{bag['key']}_{idx}"
+            is_checked = checked.get(key, False)
+            entries.append({'text': text, 'key': key, 'checked': is_checked, 'custom': False})
+            total += 1
+            if is_checked:
+                done += 1
+        for c in custom_items:
+            if c['bag'] == bag['key']:
+                is_checked = checked.get(c['id'], False)
+                entries.append({'text': c['text'], 'key': c['id'], 'checked': is_checked, 'custom': True})
+                total += 1
+                if is_checked:
+                    done += 1
+        bags.append({'key': bag['key'], 'label': bag['label'], 'entries': entries})
+    return render_template('hospitalbag.html', user=user, current_week=current_week,
+                           bags=bags, total=total, done=done)
+
+
+@app.route('/api/hospitalbag/toggle', methods=['POST'])
+def toggle_hospitalbag_item():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    key = data.get('key', '')
+    if not key:
+        return jsonify({'error': 'חסר מפתח'}), 400
+    checked = user.setdefault('hospital_bag', {})
+    checked[key] = not checked.get(key, False)
+    save_user(device_id, user)
+    return jsonify({'checked': checked[key]})
+
+
+@app.route('/api/hospitalbag/custom', methods=['POST'])
+def add_hospitalbag_custom():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    text = data.get('text', '').strip()
+    bag = data.get('bag', '')
+    if not text or bag not in [b['key'] for b in HOSPITAL_BAGS]:
+        return jsonify({'error': 'חסר מידע'}), 400
+    item_id = 'custom_' + uuid.uuid4().hex[:10]
+    user.setdefault('hospital_bag_custom', []).append({'id': item_id, 'text': text, 'bag': bag})
+    save_user(device_id, user)
+    return jsonify({'success': True, 'id': item_id})
+
+
+@app.route('/api/hospitalbag/custom/<item_id>', methods=['DELETE'])
+def delete_hospitalbag_custom(item_id):
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    user['hospital_bag_custom'] = [c for c in user.get('hospital_bag_custom', []) if c['id'] != item_id]
+    user.get('hospital_bag', {}).pop(item_id, None)
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+# ─── Emergency Contacts ──────────────────────────────────────────────────────────
+
+@app.route('/contacts')
+def contacts():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    return render_template('contacts.html', user=user, current_week=current_week,
+                           contacts=user.get('emergency_contacts', []))
+
+
+@app.route('/api/contacts', methods=['POST'])
+def add_contact():
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    data = request.json or {}
+    name = data.get('name', '').strip()
+    role = data.get('role', '').strip()
+    phone = data.get('phone', '').strip()
+    notes = data.get('notes', '').strip()
+    if not name or not phone:
+        return jsonify({'error': 'חסר שם או טלפון'}), 400
+    user.setdefault('emergency_contacts', []).append({
+        'id': uuid.uuid4().hex[:10], 'name': name, 'role': role, 'phone': phone, 'notes': notes,
+    })
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+@app.route('/api/contacts/<contact_id>', methods=['DELETE'])
+def delete_contact(contact_id):
+    device_id = get_device_id()
+    user = load_user(device_id)
+    if not user:
+        return jsonify({'error': 'לא מוגדרת'}), 401
+    user['emergency_contacts'] = [c for c in user.get('emergency_contacts', []) if c['id'] != contact_id]
+    save_user(device_id, user)
+    return jsonify({'success': True})
+
+
+# ─── Belly Photo Comparison ──────────────────────────────────────────────────────
+
+@app.route('/gallery/compare')
+def gallery_compare():
+    user, current_week, _, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    return render_template('compare.html', user=user, current_week=current_week)
+
+
+# ─── Journal PDF Export ──────────────────────────────────────────────────────────
+
+@app.route('/journal/export')
+def journal_export():
+    user, current_week, due_date, _ = get_user_context()
+    if not user:
+        return redirect(url_for('setup'))
+    entries = sorted(user.get('journal', []), key=lambda e: e['week'])
+    return render_template('journal_export.html', user=user, current_week=current_week,
+                           due_date=due_date, entries=entries)
+
+
 @app.route('/sw.js')
 def service_worker():
     response = make_response(send_from_directory('static', 'sw.js'))

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}מד שתייה — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">💧 מד שתייה</h1>
+    <p class="page-subtitle">שתייה מספקת חשובה במיוחד בהריון — יעד יומי: {{ goal }} כוסות (כ-2 ליטר) 💕</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+    <div class="card" style="padding:28px; text-align:center;">
+        <h3 style="margin-bottom:20px; color:var(--pink);">היום שתית</h3>
+        <div style="font-size:56px; font-weight:800; color:var(--pink);" id="waterCount">{{ today_count }}</div>
+        <div style="font-size:14px; color:var(--text-muted); margin-bottom:20px;">מתוך {{ goal }} כוסות</div>
+
+        <div style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-bottom:24px;" id="waterCups">
+            {% for i in range(goal) %}
+            <span class="water-cup" data-idx="{{ i }}" style="font-size:32px; opacity:{{ '1' if i < today_count else '0.25' }}; transition:opacity 0.2s;">🥤</span>
+            {% endfor %}
+        </div>
+
+        <button class="btn btn-primary" onclick="addCup()" style="width:100%; margin-bottom:10px;">+ כוסית מים 💧</button>
+        <button class="btn btn-outline" onclick="resetWater()" style="width:100%;">איפוס להיום</button>
+    </div>
+
+    <div class="card" style="padding:28px;">
+        <h3 style="margin-bottom:16px; color:var(--pink);">📊 7 ימים אחרונים</h3>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+            {% for day in history %}
+            {% set dt_parts = day.date.split('-') %}
+            {% set pct = (day.count / goal * 100) | int if goal > 0 else 0 %}
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="font-size:13px; color:var(--text-muted); width:36px; flex-shrink:0;">{{ dt_parts[2] }}/{{ dt_parts[1] }}</div>
+                <div style="flex:1; height:12px; background:var(--border); border-radius:20px; overflow:hidden;">
+                    <div style="height:100%; width:{{ [pct, 100] | min }}%; background:linear-gradient(90deg,#7DD3FC,#0EA5E9); border-radius:20px; transition:width 0.3s;"></div>
+                </div>
+                <div style="font-size:13px; font-weight:600; color:var(--pink); width:36px; text-align:left; flex-shrink:0;">{{ day.count }}/{{ goal }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="padding:16px; background:#EFF9FF; border-radius:12px; border:1px solid #BAE6FD;">
+            <h4 style="color:#075985; font-size:14px; margin-bottom:10px;">💡 למה שתייה חשובה</h4>
+            <ul style="font-size:13px; color:#075985; line-height:1.8; padding-right:16px;">
+                <li>מסייעת לזרימת דם תקינה לתינוק</li>
+                <li>מפחיתה נפיחות ועצירות</li>
+                <li>מונעת התכווצויות ועייפות</li>
+                <li>חשובה במיוחד בימים חמים</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const WATER_GOAL = {{ goal }};
+
+async function addCup() {
+    const r = await fetch('/api/water', {method: 'POST'});
+    const d = await r.json();
+    document.getElementById('waterCount').textContent = d.count;
+    document.querySelectorAll('.water-cup').forEach(el => {
+        el.style.opacity = parseInt(el.dataset.idx) < d.count ? '1' : '0.25';
+    });
+}
+
+async function resetWater() {
+    if (!confirm('לאפס את מד השתייה של היום?')) return;
+    const r = await fetch('/api/water/reset', {method: 'POST'});
+    const d = await r.json();
+    document.getElementById('waterCount').textContent = d.count;
+    document.querySelectorAll('.water-cup').forEach(el => { el.style.opacity = '0.25'; });
+}
+</script>
+{% endblock %}

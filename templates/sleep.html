@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}מעקב שינה — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">😴 מעקב שינה</h1>
+    <p class="page-subtitle">תעדי כמה ואיך ישנת — שינה טובה חשובה לך ולתינוק 💕</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+    <div class="card" style="padding:28px;">
+        <h3 style="margin-bottom:20px; color:var(--pink);">איך ישנת הלילה?</h3>
+
+        <div style="margin-bottom:20px;">
+            <label style="display:block; font-size:14px; color:var(--text-muted); margin-bottom:6px;">כמה שעות ישנת?</label>
+            <input type="number" id="sleepHours" min="0" max="24" step="0.5" placeholder="7.5"
+                   value="{{ today_sleep.hours if today_sleep else '' }}"
+                   style="width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:12px; font-family:Heebo,sans-serif; font-size:15px; background:var(--bg);">
+        </div>
+
+        <label style="display:block; font-size:14px; color:var(--text-muted); margin-bottom:10px;">איכות השינה</label>
+        <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:24px;" id="qualityOptions">
+            {% for q in quality_options %}
+            <div class="sleep-quality-opt" data-key="{{ q.key }}" onclick="selectQuality('{{ q.key }}')"
+                 style="text-align:center; padding:12px 4px; border:2px solid {% if today_sleep and today_sleep.quality == q.key %}var(--pink){% else %}var(--border){% endif %};
+                        background:{% if today_sleep and today_sleep.quality == q.key %}var(--pink-pale){% else %}var(--white){% endif %};
+                        border-radius:12px; cursor:pointer; transition:all 0.2s;">
+                <div style="font-size:24px;">{{ q.emoji }}</div>
+                <div style="font-size:11px; margin-top:4px; color:var(--text-muted);">{{ q.label }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <button class="btn btn-primary" onclick="saveSleep()" style="width:100%;">שמרי מעקב שינה 💤</button>
+        <div id="sleepMsg" style="margin-top:12px; font-size:14px; text-align:center; color:var(--pink);"></div>
+    </div>
+
+    <div class="card" style="padding:28px;">
+        <h3 style="margin-bottom:6px; color:var(--pink);">📊 14 הימים האחרונים</h3>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">ממוצע: <strong style="color:var(--pink);">{{ avg_hours }} שעות</strong> ללילה</p>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            {% for day in history %}
+            {% set dt_parts = day.date.split('-') %}
+            {% set hours = day.sleep.hours if day.sleep else 0 %}
+            {% set pct = (hours / 10 * 100) | int if hours else 0 %}
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="font-size:12px; color:var(--text-muted); width:34px; flex-shrink:0;">{{ dt_parts[2] }}/{{ dt_parts[1] }}</div>
+                <div style="flex:1; height:12px; background:var(--border); border-radius:20px; overflow:hidden;">
+                    <div style="height:100%; width:{{ [pct, 100] | min }}%; background:linear-gradient(90deg,var(--lavender-light),var(--lavender)); border-radius:20px;"></div>
+                </div>
+                <span style="font-size:16px; width:20px; flex-shrink:0;">{{ day.sleep.emoji if day.sleep else '' }}</span>
+                <div style="font-size:12px; font-weight:600; color:var(--pink); width:34px; text-align:left; flex-shrink:0;">{{ hours if day.sleep else '-' }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top:20px; padding:14px 16px; background:var(--pink-pale); border-radius:12px; font-size:13px; color:var(--text-muted); line-height:1.6; border:1px solid var(--border);">
+            💡 קשה לישון? נסי כרית הריון, ישני על הצד השמאלי, והימנעי ממסכים לפני השינה.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedQuality = '{{ today_sleep.quality if today_sleep else "" }}';
+
+function selectQuality(key) {
+    selectedQuality = key;
+    document.querySelectorAll('.sleep-quality-opt').forEach(el => {
+        const active = el.dataset.key === key;
+        el.style.borderColor = active ? 'var(--pink)' : 'var(--border)';
+        el.style.background = active ? 'var(--pink-pale)' : 'var(--white)';
+    });
+}
+
+async function saveSleep() {
+    const hours = parseFloat(document.getElementById('sleepHours').value);
+    const msg = document.getElementById('sleepMsg');
+    if (isNaN(hours) || !selectedQuality) {
+        msg.textContent = 'נא למלא שעות שינה ואיכות';
+        return;
+    }
+    const r = await fetch('/api/sleep', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({hours, quality: selectedQuality})
+    });
+    if (r.ok) { msg.textContent = '✓ נשמר! 💕'; setTimeout(() => location.reload(), 900); }
+    else { const d = await r.json(); msg.textContent = d.error || 'שגיאה בשמירה'; }
+}
+</script>
+{% endblock %}

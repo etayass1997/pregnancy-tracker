@@ -168,13 +168,28 @@ async function _getAllPhotos() {
     });
 }
 
-async function _addPhoto(blob, week, caption) {
+async function _getPhotosByCategory(category) {
+    const all = await _getAllPhotos();
+    return all.filter(p => (p.category || 'belly') === category);
+}
+
+async function _getPhoto(id) {
+    const d = await _openDB();
+    return new Promise((resolve, reject) => {
+        const req = d.transaction(_STORE, 'readonly').objectStore(_STORE).get(id);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = e => reject(e.target.error);
+    });
+}
+
+async function _addPhoto(blob, week, caption, category) {
     const d = await _openDB();
     return new Promise((resolve, reject) => {
         const req = d.transaction(_STORE, 'readwrite').objectStore(_STORE).add({
             blob,
             week: parseInt(week),
             caption,
+            category: category || 'belly',
             uploadedAt: new Date().toLocaleDateString('he-IL')
         });
         req.onsuccess = () => resolve(req.result);
@@ -197,7 +212,7 @@ async function loadGallery() {
     const countEl = document.getElementById('photoCount');
     if (!grid) return;
 
-    const photos = (await _getAllPhotos()).sort((a, b) => a.week - b.week);
+    const photos = (await _getPhotosByCategory('belly')).sort((a, b) => a.week - b.week);
     if (countEl) countEl.textContent = photos.length;
 
     if (photos.length === 0) {
@@ -567,11 +582,27 @@ function renderBellyChart(measurements) {
     svg.innerHTML = out;
 }
 
+// ─── Dark Mode ───────────────────────────────────────────────────────────────
+
+function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle('dark-mode');
+    try { localStorage.setItem('pt_theme', isDark ? 'dark' : 'light'); } catch {}
+    _updateThemeBtn();
+}
+
+function _updateThemeBtn() {
+    const btn = document.getElementById('themeToggleBtn');
+    if (!btn) return;
+    const isDark = document.documentElement.classList.contains('dark-mode');
+    btn.textContent = isDark ? '☀️ מצב בהיר' : '🌙 מצב כהה';
+}
+
 // ─── Init ──────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', function () {
     initChat();
     bindUploadAreaClick();
+    _updateThemeBtn();
 
     const modalHandlers = [
         ['uploadModal', closeUploadModal],

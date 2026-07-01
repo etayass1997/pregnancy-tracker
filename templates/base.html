@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
+    <script>(function(){try{if(localStorage.getItem('pt_theme')==='dark')document.documentElement.classList.add('dark-mode');}catch(e){}})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}בטן מלאה 💕{% endblock %}</title>
@@ -102,6 +103,21 @@
             </a>
         </li>
         <li>
+            <a href="{{ url_for('water') }}" class="nav-link {% if request.endpoint == 'water' %}active{% endif %}">
+                <span class="nav-icon">💧</span> מד שתייה
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('sleep') }}" class="nav-link {% if request.endpoint == 'sleep' %}active{% endif %}">
+                <span class="nav-icon">😴</span> מעקב שינה
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('kegel') }}" class="nav-link {% if request.endpoint == 'kegel' %}active{% endif %}">
+                <span class="nav-icon">🌸</span> תרגילי קיגל
+            </a>
+        </li>
+        <li>
             <a href="{{ url_for('contractions') }}" class="nav-link {% if request.endpoint == 'contractions' %}active{% endif %}">
                 <span class="nav-icon">⏱️</span> טיימר צירים
             </a>
@@ -127,6 +143,36 @@
             </a>
         </li>
         <li>
+            <a href="{{ url_for('glucose') }}" class="nav-link {% if request.endpoint == 'glucose' %}active{% endif %}">
+                <span class="nav-icon">🍬</span> מעקב סוכר
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('labs') }}" class="nav-link {% if request.endpoint == 'labs' %}active{% endif %}">
+                <span class="nav-icon">🧪</span> תוצאות בדיקות
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('skin') }}" class="nav-link {% if request.endpoint == 'skin' %}active{% endif %}">
+                <span class="nav-icon">🌊</span> שינויי עור
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('registry') }}" class="nav-link {% if request.endpoint == 'registry' %}active{% endif %}">
+                <span class="nav-icon">🛍️</span> רשימת ציוד
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('hospitalbag') }}" class="nav-link {% if request.endpoint == 'hospitalbag' %}active{% endif %}">
+                <span class="nav-icon">🧳</span> תיק לבית חולים
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('contacts') }}" class="nav-link {% if request.endpoint == 'contacts' %}active{% endif %}">
+                <span class="nav-icon">📞</span> אנשי קשר
+            </a>
+        </li>
+        <li>
             <a href="{{ url_for('achievements') }}" class="nav-link {% if request.endpoint == 'achievements' %}active{% endif %}">
                 <span class="nav-icon">🏆</span> הישגים
             </a>
@@ -135,6 +181,7 @@
 
     <div class="sidebar-footer">
         <a href="{{ url_for('setup') }}" class="settings-link">⚙️ עדכון פרטים</a>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggleBtn">🌙 מצב כהה</button>
     </div>
 </nav>
 {% endif %}

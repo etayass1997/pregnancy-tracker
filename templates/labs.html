@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}תוצאות בדיקות — בטן מלאה{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+        <h1 class="page-title">🧪 תוצאות בדיקות</h1>
+        <p class="page-subtitle">כל תוצאות בדיקות הדם והמעבדה במקום אחד — {{ results | length }} רשומות</p>
+    </div>
+    <button class="btn btn-primary" onclick="openLabModal()">+ הוספת תוצאה</button>
+</div>
+
+{% if results %}
+<div class="journal-list">
+    {% for r in results %}
+    <div class="journal-card" id="lab-{{ r.id }}">
+        <div class="journal-card-header">
+            <span class="journal-week-badge">{{ r.test_name }}</span>
+            <span class="journal-date">{{ r.date }}</span>
+        </div>
+        {% if r.result %}<div class="journal-text"><strong>תוצאה:</strong> {{ r.result }}</div>{% endif %}
+        {% if r.notes %}<div class="journal-text" style="color:var(--text-muted); font-size:13px; margin-top:4px;">{{ r.notes }}</div>{% endif %}
+        <div class="journal-actions">
+            <button class="journal-action-btn danger" onclick="deleteLab('{{ r.id }}')">🗑️ מחיקה</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🧪</div>
+    <h3>אין עדיין תוצאות</h3>
+    <p>שמרי כאן תוצאות בדיקות דם, שתן ובדיקות מעבדה נוספות</p>
+    <button class="btn btn-primary" onclick="openLabModal()" style="margin-top:20px">הוסיפי תוצאה ראשונה 🧪</button>
+</div>
+{% endif %}
+
+<div class="modal" id="labModal">
+    <div class="modal-card">
+        <h2 class="modal-title">🧪 תוצאת בדיקה</h2>
+        <div class="form-group">
+            <label>שם הבדיקה</label>
+            <input type="text" id="labName" placeholder="לדוגמה: ספירת דם, ברזל, TSH...">
+        </div>
+        <div class="form-group">
+            <label>תאריך</label>
+            <input type="date" id="labDate">
+        </div>
+        <div class="form-group">
+            <label>תוצאה</label>
+            <input type="text" id="labResult" placeholder="לדוגמה: 12.5 g/dL">
+        </div>
+        <div class="form-group">
+            <label>הערות (לא חובה)</label>
+            <textarea id="labNotes" rows="3" placeholder="הערות מהרופאה..."></textarea>
+        </div>
+        <div style="display:flex;gap:12px">
+            <button class="btn btn-primary" onclick="submitLab()">שמירה</button>
+            <button class="btn btn-outline" onclick="closeLabModal()">ביטול</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openLabModal() {
+    document.getElementById('labDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('labModal').classList.add('open');
+}
+function closeLabModal() {
+    document.getElementById('labModal').classList.remove('open');
+    document.getElementById('labName').value = '';
+    document.getElementById('labResult').value = '';
+    document.getElementById('labNotes').value = '';
+}
+async function submitLab() {
+    const test_name = document.getElementById('labName').value.trim();
+    const date = document.getElementById('labDate').value;
+    const result = document.getElementById('labResult').value.trim();
+    const notes = document.getElementById('labNotes').value.trim();
+    if (!test_name || !date) { alert('נא למלא שם בדיקה ותאריך'); return; }
+    const r = await fetch('/api/labs', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({test_name, date, result, notes})
+    });
+    if (r.ok) location.reload();
+}
+async function deleteLab(id) {
+    if (!confirm('למחוק תוצאה זו?')) return;
+    await fetch('/api/labs/' + id, {method: 'DELETE'});
+    document.getElementById('lab-' + id).remove();
+}
+</script>
+{% endblock %}
