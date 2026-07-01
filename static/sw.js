@@ -1,4 +1,4 @@
-const CACHE = 'beten-gdola-v1';
+const CACHE = 'beten-gdola-v2';
 const STATIC = [
   '/',
   '/static/style.css',
@@ -29,14 +29,19 @@ self.addEventListener('fetch', e => {
   // API calls — always network, no cache
   if (url.pathname.startsWith('/api/')) return;
 
-  // Static assets — cache first
+  // Static assets — stale-while-revalidate: serve from cache instantly,
+  // refresh cache in the background so the next load is up to date.
   if (url.pathname.startsWith('/static/') || url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
     e.respondWith(
-      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return res;
-      }))
+      caches.open(CACHE).then(cache =>
+        cache.match(e.request).then(cached => {
+          const fetchPromise = fetch(e.request).then(res => {
+            cache.put(e.request, res.clone());
+            return res;
+          }).catch(() => cached);
+          return cached || fetchPromise;
+        })
+      )
     );
     return;
   }
